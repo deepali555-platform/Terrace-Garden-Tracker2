@@ -1,0 +1,34 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Helper functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    // User profile and subcollections are strictly private to the user
+    match /users/{userId} {
+      allow read, write: if isOwner(userId);
+
+      // Private garden state, ownership, fertilizer dates
+      match /userPlants/{plantId} {
+        allow read, write: if isOwner(userId);
+      }
+
+      // Private custom plants added by the user
+      match /customPlants/{plantId} {
+        allow read, write: if isOwner(userId);
+      }
+
+      // Any additional private subcollections (e.g. scan history)
+      match /{document=**} {
+        allow read, write: if isOwner(userId);
+      }
+    }
+  }
+}

@@ -1,11 +1,13 @@
-import React from 'react';
-import { Plus, Leaf, Calendar, Stethoscope, RefreshCw, Sprout, Sparkles, Camera, AlertTriangle } from 'lucide-react';
+import React, { useState, useRef, useEffect } from 'react';
+import { Plus, Leaf, Calendar, Stethoscope, RefreshCw, Sprout, Sparkles, Camera, LogOut, User as UserIcon, ShieldCheck } from 'lucide-react';
+import { useAuth } from '../contexts/AuthContext';
 
 interface HeaderProps {
   currentTab: 'home' | 'my-garden' | 'reminders' | 'diagnosis' | 'fertilizer';
   onSelectTab: (tab: 'home' | 'my-garden' | 'reminders' | 'diagnosis' | 'fertilizer') => void;
   onOpenAddModal: () => void;
   onOpenScanModal?: () => void;
+  onOpenLoginModal?: () => void;
   overdueFertilizerCount?: number;
   gardenPlantCount?: number;
   totalPlantCount?: number;
@@ -17,11 +19,31 @@ export const Header: React.FC<HeaderProps> = ({
   onSelectTab,
   onOpenAddModal,
   onOpenScanModal,
+  onOpenLoginModal,
   overdueFertilizerCount = 0,
   gardenPlantCount = 0,
   totalPlantCount = 0,
   onResetDefaults,
 }) => {
+  const { user, signOut, isGuest } = useAuth();
+  const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
+  const profileMenuRef = useRef<HTMLDivElement>(null);
+
+  // Close profile dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (profileMenuRef.current && !profileMenuRef.current.contains(event.target as Node)) {
+        setIsProfileMenuOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const handleSignOut = async () => {
+    setIsProfileMenuOpen(false);
+    await signOut();
+  };
   return (
     <header className="sticky top-0 z-30 bg-[#0d2f1c] text-white border-b border-emerald-900/70 px-4 sm:px-8 py-3.5 shadow-md relative overflow-hidden transition-colors">
       {/* Subtle Botanical SVG Background Pattern */}
@@ -160,16 +182,98 @@ export const Header: React.FC<HeaderProps> = ({
             <span>Add</span>
           </button>
 
-          {onResetDefaults && (
-            <button
-              type="button"
-              onClick={onResetDefaults}
-              title="Reset default Indian plant list"
-              className="hidden xl:flex items-center justify-center gap-1.5 text-xs text-emerald-200 hover:text-white px-2.5 py-1.5 rounded-xl border border-emerald-800/80 bg-emerald-950/60 hover:bg-emerald-900 transition-colors whitespace-nowrap min-h-[44px]"
-            >
-              <RefreshCw className="w-3.5 h-3.5" />
-            </button>
-          )}
+          {/* User Profile / Authentication Menu */}
+          <div className="relative" ref={profileMenuRef}>
+            {user ? (
+              <button
+                type="button"
+                onClick={() => setIsProfileMenuOpen(!isProfileMenuOpen)}
+                className="flex items-center justify-center p-0.5 rounded-xl border border-emerald-500/50 hover:border-emerald-400 bg-emerald-900/60 active:scale-95 transition-all min-h-[44px] min-w-[44px]"
+                title={`Logged in as ${user.displayName || user.email || 'Gardener'}`}
+                aria-label="User account menu"
+              >
+                {user.photoURL ? (
+                  <img
+                    src={user.photoURL}
+                    alt={user.displayName || 'Profile'}
+                    className="w-8 h-8 rounded-lg object-cover border border-emerald-400/40"
+                    referrerPolicy="no-referrer"
+                  />
+                ) : (
+                  <div className="w-8 h-8 rounded-lg bg-emerald-700 text-white font-bold flex items-center justify-center text-xs">
+                    {(user.displayName || user.email || 'U').charAt(0).toUpperCase()}
+                  </div>
+                )}
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={onOpenLoginModal}
+                className="flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-bold text-emerald-100 hover:text-white bg-emerald-950/70 hover:bg-emerald-900 border border-emerald-700/60 rounded-xl transition-all min-h-[44px] active:scale-95"
+                title="Sign in with Google"
+              >
+                <UserIcon className="w-4 h-4 text-emerald-300" />
+                <span className="hidden sm:inline">Sign In</span>
+              </button>
+            )}
+
+            {/* Profile Dropdown Menu */}
+            {isProfileMenuOpen && user && (
+              <div className="absolute right-0 top-full mt-2 w-64 bg-white text-stone-900 rounded-2xl shadow-xl border border-stone-200 p-3 z-50 animate-in fade-in slide-in-from-top-2 duration-150 space-y-3">
+                {/* User Info Header */}
+                <div className="flex items-start gap-2.5 pb-2.5 border-b border-stone-100">
+                  {user.photoURL ? (
+                    <img
+                      src={user.photoURL}
+                      alt={user.displayName || 'Profile'}
+                      className="w-10 h-10 rounded-xl object-cover border border-stone-200"
+                      referrerPolicy="no-referrer"
+                    />
+                  ) : (
+                    <div className="w-10 h-10 rounded-xl bg-emerald-800 text-white font-bold flex items-center justify-center text-sm">
+                      {(user.displayName || user.email || 'U').charAt(0).toUpperCase()}
+                    </div>
+                  )}
+                  <div className="min-w-0 flex-1">
+                    <p className="text-xs font-bold text-stone-900 truncate">
+                      {user.displayName || 'Terrace Gardener'}
+                    </p>
+                    <p className="text-[11px] text-stone-500 truncate mt-0.5">
+                      {user.email}
+                    </p>
+                    <div className="flex items-center gap-1 mt-1 text-[10px] text-emerald-700 font-bold">
+                      <ShieldCheck className="w-3 h-3 text-emerald-600" />
+                      <span>Private Garden Synced</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Quick Garden Summary */}
+                <div className="p-2 bg-stone-50 rounded-xl text-[11px] text-stone-600 space-y-1">
+                  <div className="flex justify-between">
+                    <span>Plants in Garden:</span>
+                    <strong className="text-stone-900">{gardenPlantCount}</strong>
+                  </div>
+                  {overdueFertilizerCount > 0 && (
+                    <div className="flex justify-between text-amber-800 font-bold">
+                      <span>Feed Overdue:</span>
+                      <span>{overdueFertilizerCount}</span>
+                    </div>
+                  )}
+                </div>
+
+                {/* Sign Out Action Button */}
+                <button
+                  type="button"
+                  onClick={handleSignOut}
+                  className="w-full min-h-[44px] px-3 py-2 rounded-xl text-xs font-bold text-rose-700 hover:text-rose-900 hover:bg-rose-50 border border-rose-200 transition-colors flex items-center justify-center gap-2 cursor-pointer active:scale-95"
+                >
+                  <LogOut className="w-4 h-4 text-rose-600" />
+                  <span>Log Out</span>
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </header>

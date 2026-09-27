@@ -1,0 +1,63 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "Registered terrace gardener user profile",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "description": "Firebase Auth user ID" },
+        "email": { "type": "string", "description": "User email address" },
+        "displayName": { "type": "string", "description": "User display name" },
+        "photoURL": { "type": "string", "description": "User avatar profile photo URL" },
+        "createdAt": { "type": "string", "description": "Profile creation timestamp" },
+        "lastLoginAt": { "type": "string", "description": "Last login timestamp" }
+      },
+      "required": ["uid"]
+    },
+    "UserPlantState": {
+      "title": "UserPlantState",
+      "description": "User specific garden state, fertilizer schedule, and private scans for a plant",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Plant identifier" },
+        "userId": { "type": "string", "description": "Owner user ID" },
+        "inMyGarden": { "type": "boolean", "description": "Whether the user owns this plant" },
+        "isFavorite": { "type": "boolean", "description": "Whether the plant is favorited" },
+        "lastFertilizedDate": { "type": "string", "description": "ISO date string of last feeding" },
+        "customPhotoUrl": { "type": "string", "description": "User custom plant photograph" },
+        "customFertilizerIntervalDays": { "type": "number", "description": "Custom feeding interval in days" },
+        "updatedAt": { "type": "string", "description": "Last updated ISO timestamp" }
+      },
+      "required": ["id", "userId", "inMyGarden"]
+    },
+    "CustomPlant": {
+      "title": "CustomPlant",
+      "description": "Privately created plant species added by the user",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Unique custom plant ID" },
+        "userId": { "type": "string", "description": "Author user ID" },
+        "name": { "type": "string", "description": "Plant name" },
+        "category": { "type": "string", "description": "Plant category" },
+        "inMyGarden": { "type": "boolean", "description": "Owned in garden" },
+        "createdAt": { "type": "string", "description": "Created ISO timestamp" },
+        "updatedAt": { "type": "string", "description": "Updated ISO timestamp" }
+      },
+      "required": ["id", "userId", "name", "category"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "UserProfile",
+      "description": "Private profile document for each authenticated user"
+    },
+    "/users/{userId}/userPlants/{plantId}": {
+      "schema": "UserPlantState",
+      "description": "Private plant ownership, fertilizer dates, and scan history per user"
+    },
+    "/users/{userId}/customPlants/{plantId}": {
+      "schema": "CustomPlant",
+      "description": "Custom plants created by the user via Add Plant form"
+    }
+  }
+}

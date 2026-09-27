@@ -1,6 +1,9 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { Plant, PlantCategory, SunlightType, WaterLevel, HealthScanRecord } from './types/plant';
 import { storageService } from './services/storageService';
+import { firestoreStorageService } from './services/firestoreStorageService';
+import { useAuth } from './contexts/AuthContext';
+import { LoginScreen } from './components/LoginScreen';
 import { isPlantBloomingMonth, MONTHS } from './utils/gardenHelpers';
 import { calculateFertilizerStatus } from './utils/fertilizerHelpers';
 import { Header } from './components/Header';
@@ -29,9 +32,15 @@ import {
   BookOpen,
   Search,
   X,
+  Leaf,
+  User as UserIcon,
 } from 'lucide-react';
 
 export default function App() {
+  const { user, loading: authLoading, isGuest } = useAuth();
+  const [showLoginModal, setShowLoginModal] = useState(false);
+  const [isLoadingPlants, setIsLoadingPlants] = useState(true);
+
   const [plants, setPlants] = useState<Plant[]>([]);
   const [currentTab, setCurrentTab] = useState<'my-garden' | 'home' | 'reminders' | 'diagnosis' | 'fertilizer'>('my-garden');
   const [toastMessage, setToastMessage] = useState<string | null>(null);
@@ -65,11 +74,37 @@ export default function App() {
 
   const currentMonthName = MONTHS[currentMonthIndex - 1]?.name || 'September';
 
-  // Load plants on mount
+  // Load plants when user changes or on initial load
   useEffect(() => {
-    const loaded = storageService.getPlants();
-    setPlants(loaded);
-  }, []);
+    let isCancelled = false;
+
+    async function loadData() {
+      setIsLoadingPlants(true);
+      if (user) {
+        // Authenticated user: Load private garden from Firestore (with automatic migration of pre-existing local data)
+        const userPlants = await firestoreStorageService.loadPlantsForUser(user.uid);
+        if (!isCancelled) {
+          setPlants(userPlants);
+          setIsLoadingPlants(false);
+        }
+      } else {
+        // Guest or unauthenticated: Load local/shared reference plants
+        const local = storageService.getPlants();
+        if (!isCancelled) {
+          setPlants(local);
+          setIsLoadingPlants(false);
+        }
+      }
+    }
+
+    if (!authLoading) {
+      loadData();
+    }
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [user, authLoading]);
 
   // Filter ONLY plants marked as "In My Garden"
   const ownedPlants = useMemo(() => {
@@ -99,7 +134,7 @@ export default function App() {
     setIsFormModalOpen(true);
   };
 
-  const handleSavePlant = (savedPlant: Omit<Plant, 'id' | 'createdAt' | 'updatedAt'> | Plant) => {
+  const handleSavePlant = async (savedPlant: Omit<Plant, 'id' | 'createdAt' | 'updatedAt'> | Plant) => {
     if ('id' in savedPlant && savedPlant.id) {
       // Update existing
       const updated = storageService.updatePlant(savedPlant as Plant);
@@ -107,17 +142,26 @@ export default function App() {
       if (selectedPlantForDetail?.id === updated.id) {
         setSelectedPlantForDetail(updated);
       }
+      if (user) {
+        await firestoreStorageService.syncUserPlantState(user.uid, updated);
+      }
       showToast(`Updated care guide for ${updated.name}`);
     } else {
       // Add new
-      const created = storageService.addPlant(savedPlant);
-      setPlants((prev) => [created, ...prev]);
-      showToast(`Added ${created.name} to your garden!`);
+      if (user) {
+        const created = await firestoreStorageService.addCustomPlant(user.uid, savedPlant);
+        setPlants((prev) => [created, ...prev]);
+        showToast(`Added ${created.name} to your garden!`);
+      } else {
+        const created = storageService.addPlant(savedPlant);
+        setPlants((prev) => [created, ...prev]);
+        showToast(`Added ${created.name} to your garden!`);
+      }
     }
   };
 
   // Delete plant handler
-  const handleDeletePlant = (id: string) => {
+  const handleDeletePlant = async (id: string) => {
     const target = plants.find((p) => p.id === id);
     const success = storageService.deletePlant(id);
     if (success) {
@@ -125,12 +169,15 @@ export default function App() {
       if (selectedPlantForDetail?.id === id) {
         setSelectedPlantForDetail(null);
       }
+      if (user && id.startsWith('custom-')) {
+        await firestoreStorageService.deleteCustomPlant(user.uid, id);
+      }
       showToast(`Deleted ${target?.name || 'plant'} from tracker`);
     }
   };
 
   // Toggle Favorite
-  const handleToggleFavorite = (id: string, e: React.MouseEvent) => {
+  const handleToggleFavorite = async (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
     const updated = storageService.toggleFavorite(id);
     if (updated) {
@@ -138,11 +185,17 @@ export default function App() {
       if (selectedPlantForDetail?.id === id) {
         setSelectedPlantForDetail({ ...selectedPlantForDetail, isFavorite: updated.isFavorite });
       }
+      if (user) {
+        const full = plants.find((p) => p.id === id);
+        if (full) {
+          await firestoreStorageService.syncUserPlantState(user.uid, { ...full, isFavorite: updated.isFavorite });
+        }
+      }
     }
   };
 
   // Toggle "In My Garden"
-  const handleToggleInMyGarden = (id: string, e?: React.MouseEvent) => {
+  const handleToggleInMyGarden = async (id: string, e?: React.MouseEvent) => {
     if (e) {
       e.stopPropagation();
     }
@@ -151,6 +204,12 @@ export default function App() {
       setPlants((prev) => prev.map((p) => (p.id === id ? { ...p, inMyGarden: updated.inMyGarden } : p)));
       if (selectedPlantForDetail?.id === id) {
         setSelectedPlantForDetail({ ...selectedPlantForDetail, inMyGarden: updated.inMyGarden });
+      }
+      if (user) {
+        const full = plants.find((p) => p.id === id);
+        if (full) {
+          await firestoreStorageService.syncUserPlantState(user.uid, { ...full, inMyGarden: updated.inMyGarden });
+        }
       }
       showToast(
         updated.inMyGarden
@@ -161,12 +220,15 @@ export default function App() {
   };
 
   // Update Plant Photo (upload or reset)
-  const handleUpdatePlantPhoto = (plantId: string, photoDataUrl: string | null) => {
+  const handleUpdatePlantPhoto = async (plantId: string, photoDataUrl: string | null) => {
     const updated = storageService.updatePlantPhoto(plantId, photoDataUrl);
     if (updated) {
       setPlants((prev) => prev.map((p) => (p.id === plantId ? updated : p)));
       if (selectedPlantForDetail?.id === plantId) {
         setSelectedPlantForDetail(updated);
+      }
+      if (user) {
+        await firestoreStorageService.syncUserPlantState(user.uid, updated);
       }
       showToast(photoDataUrl ? `Updated photo for ${updated.name}!` : `Reset photo to default for ${updated.name}`);
     }
@@ -220,36 +282,45 @@ export default function App() {
   };
 
   // Save Scan Record to Plant History
-  const handleSaveScanRecord = (plantId: string, record: HealthScanRecord) => {
+  const handleSaveScanRecord = async (plantId: string, record: HealthScanRecord) => {
     const updated = storageService.saveScanRecord(plantId, record);
     if (updated) {
       setPlants((prev) => prev.map((p) => (p.id === plantId ? updated : p)));
       if (selectedPlantForDetail?.id === plantId) {
         setSelectedPlantForDetail(updated);
       }
+      if (user) {
+        await firestoreStorageService.syncUserPlantState(user.uid, updated);
+      }
       showToast(`Health diagnosis logged for ${updated.name}!`);
     }
   };
 
   // Delete Scan Record
-  const handleDeleteScanRecord = (plantId: string, scanId: string) => {
+  const handleDeleteScanRecord = async (plantId: string, scanId: string) => {
     const updated = storageService.deleteScanRecord(plantId, scanId);
     if (updated) {
       setPlants((prev) => prev.map((p) => (p.id === plantId ? updated : p)));
       if (selectedPlantForDetail?.id === plantId) {
         setSelectedPlantForDetail(updated);
       }
+      if (user) {
+        await firestoreStorageService.syncUserPlantState(user.uid, updated);
+      }
       showToast('Health scan log entry removed');
     }
   };
 
   // Record Fertilization
-  const handleMarkFertilized = (plantId: string, dateStr?: string) => {
+  const handleMarkFertilized = async (plantId: string, dateStr?: string) => {
     const updated = storageService.recordFertilization(plantId, dateStr);
     if (updated) {
       setPlants((prev) => prev.map((p) => (p.id === plantId ? updated : p)));
       if (selectedPlantForDetail?.id === plantId) {
         setSelectedPlantForDetail(updated);
+      }
+      if (user) {
+        await firestoreStorageService.syncUserPlantState(user.uid, updated);
       }
       showToast(`Logged fertilization for ${updated.name}! Next due date recalculated.`);
     }
@@ -338,6 +409,22 @@ export default function App() {
     setOnlyBloomingNow(false);
   };
 
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-[#f7f4ea] flex flex-col items-center justify-center p-4">
+        <div className="w-14 h-14 rounded-2xl bg-emerald-800 text-white flex items-center justify-center mb-3 shadow-md animate-bounce">
+          <Leaf className="w-7 h-7 text-emerald-200" />
+        </div>
+        <p className="text-sm font-bold text-stone-800">Loading Terrace Garden Tracker...</p>
+      </div>
+    );
+  }
+
+  // Show login screen on initial open if user is not signed in and not yet in guest mode
+  if (!user && !isGuest) {
+    return <LoginScreen onContinueAsGuest={() => {}} />;
+  }
+
   return (
     <div className="min-h-screen bg-[#f7f4ea] text-stone-900 flex flex-col pb-36 lg:pb-16 overflow-x-hidden w-full">
       {/* 3-Zone Header */}
@@ -351,6 +438,7 @@ export default function App() {
         }}
         onOpenAddModal={handleOpenAddModal}
         onOpenScanModal={() => handleOpenScanModal()}
+        onOpenLoginModal={() => setShowLoginModal(true)}
         overdueFertilizerCount={overdueFertilizerCount}
         gardenPlantCount={ownedPlants.length}
         totalPlantCount={plants.length}
@@ -370,6 +458,31 @@ export default function App() {
         {/* VIEW 1: MY GARDEN (Owned Plants Only) */}
         {currentTab === 'my-garden' && (
           <div className="space-y-5 sm:space-y-6">
+            {/* Guest Mode Banner */}
+            {!user && isGuest && (
+              <div className="bg-amber-50/90 border border-amber-300 rounded-2xl p-3.5 sm:p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs text-amber-950 shadow-2xs">
+                <div className="flex items-start sm:items-center gap-2.5">
+                  <div className="w-8 h-8 rounded-xl bg-amber-100 flex items-center justify-center shrink-0 text-amber-800 font-bold">
+                    <Sparkles className="w-4 h-4 text-amber-700" />
+                  </div>
+                  <div>
+                    <span className="font-bold block text-stone-900">Browsing in Guest Mode</span>
+                    <span className="text-stone-600 text-[11px]">
+                      Sign in with Google to keep your private garden, fertilizer logs, and plant scans safely saved to your account.
+                    </span>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowLoginModal(true)}
+                  className="self-start sm:self-center px-4 py-2 bg-emerald-800 hover:bg-emerald-700 text-white font-bold rounded-xl shadow-xs transition-all active:scale-95 text-xs whitespace-nowrap min-h-[40px] flex items-center gap-1.5 cursor-pointer"
+                >
+                  <UserIcon className="w-3.5 h-3.5" />
+                  <span>Sign in with Google</span>
+                </button>
+              </div>
+            )}
+
             {/* My Garden Hero Banner */}
             <div className="bg-gradient-to-br from-[#0c2f1b] via-[#144929] to-[#1c5d36] text-stone-100 rounded-3xl p-5 sm:p-8 relative overflow-hidden shadow-md border border-emerald-700/40">
               <div className="max-w-2xl relative z-10 space-y-2.5">
@@ -520,7 +633,7 @@ export default function App() {
                     </button>
                   </div>
                 ) : (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                  <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-2.5 sm:gap-4">
                     {filteredGardenPlants.map((plant) => (
                       <PlantCard
                         key={plant.id}
@@ -639,7 +752,7 @@ export default function App() {
                 </div>
               </div>
             ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-2.5 sm:gap-4">
                 {filteredReferencePlants.map((plant) => (
                   <PlantCard
                     key={plant.id}
@@ -815,6 +928,23 @@ export default function App() {
                 Confirm Reset
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Login Modal for Guest Mode users to Sign In anytime */}
+      {showLoginModal && (
+        <div className="fixed inset-0 z-50 overflow-y-auto bg-black/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-6 animate-in fade-in duration-150">
+          <div className="relative w-full max-w-md">
+            <button
+              type="button"
+              onClick={() => setShowLoginModal(false)}
+              className="absolute top-4 right-4 z-20 w-8 h-8 rounded-full bg-white/90 hover:bg-white text-stone-700 flex items-center justify-center text-sm font-bold shadow-md active:scale-95 cursor-pointer"
+              title="Close"
+            >
+              <X className="w-4 h-4" />
+            </button>
+            <LoginScreen onContinueAsGuest={() => setShowLoginModal(false)} />
           </div>
         </div>
       )}

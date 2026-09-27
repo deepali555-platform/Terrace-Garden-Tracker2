@@ -1,0 +1,6 @@
+{
+  "name": "Terrace Garden Tracker",
+  "description": "Comprehensive plant care guide, seasonal reminders, and kitchen remedies for Indian terrace and balcony gardeners.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

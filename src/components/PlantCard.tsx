@@ -1,0 +1,189 @@
+import React from 'react';
+import { Plant } from '../types/plant';
+import { PlantImage } from './PlantImage';
+import { Sun, Droplets, Flower2, Heart, Leaf, AlertTriangle, CheckCircle2, Plus } from 'lucide-react';
+import { isPlantBloomingMonth, getPlantCategoryAccent } from '../utils/gardenHelpers';
+import { calculateFertilizerStatus } from '../utils/fertilizerHelpers';
+
+interface PlantCardProps {
+  plant: Plant;
+  currentMonthIndex: number;
+  onSelect: (plant: Plant) => void;
+  onToggleFavorite: (id: string, e: React.MouseEvent) => void;
+  onToggleGarden?: (id: string, e: React.MouseEvent) => void;
+}
+
+export const PlantCard: React.FC<PlantCardProps> = ({
+  plant,
+  currentMonthIndex,
+  onSelect,
+  onToggleFavorite,
+  onToggleGarden,
+}) => {
+  const isBloomingNow = isPlantBloomingMonth(plant, currentMonthIndex);
+  const accent = getPlantCategoryAccent(plant.category);
+  const fertilizerStatus = calculateFertilizerStatus(plant);
+  const isOwned = Boolean(plant.inMyGarden);
+
+  return (
+    <div
+      onClick={() => onSelect(plant)}
+      role="button"
+      tabIndex={0}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          onSelect(plant);
+        }
+      }}
+      className={`group text-left rounded-3xl border transition-all duration-300 hover:-translate-y-1 hover:shadow-xl active:scale-[0.99] cursor-pointer flex flex-col justify-between relative overflow-hidden p-4 ${
+        isOwned
+          ? isOwned && fertilizerStatus.isOverdue
+            ? 'bg-gradient-to-b from-amber-50/30 via-white to-white border-amber-400 ring-1 ring-amber-400/30 shadow-xs hover:border-amber-500'
+            : 'bg-gradient-to-b from-emerald-50/25 via-white to-white border-emerald-500/70 ring-1 ring-emerald-500/20 shadow-xs hover:border-emerald-600'
+          : 'bg-white border-stone-200/90 hover:border-stone-400 shadow-2xs'
+      }`}
+    >
+      <div>
+        {/* Top Status Strip: Category + In My Garden Badge / Toggle + Favorite */}
+        <div className="flex items-center justify-between gap-1.5 mb-2.5">
+          <div className="flex items-center gap-1.5 flex-wrap">
+            <span
+              className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold tracking-tight border ${accent.pillBadge}`}
+            >
+              <Leaf className="w-2.5 h-2.5" />
+              <span>{plant.category}</span>
+            </span>
+
+            {/* In My Garden Toggle Button */}
+            {onToggleGarden && (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onToggleGarden(plant.id, e);
+                }}
+                className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold tracking-tight transition-all active:scale-95 shadow-2xs ${
+                  isOwned
+                    ? 'bg-emerald-100 hover:bg-rose-50 text-emerald-900 hover:text-rose-700 border border-emerald-300 hover:border-rose-300'
+                    : 'bg-stone-100 hover:bg-emerald-100 text-stone-600 hover:text-emerald-900 border border-stone-200 hover:border-emerald-300'
+                }`}
+                title={isOwned ? 'Currently In My Garden (Click to remove)' : 'Click to Add to My Garden'}
+              >
+                {isOwned ? (
+                  <>
+                    <CheckCircle2 className="w-3 h-3 text-emerald-700 shrink-0" />
+                    <span>In My Garden</span>
+                  </>
+                ) : (
+                  <>
+                    <Plus className="w-3 h-3 text-stone-500 shrink-0 stroke-[2.5]" />
+                    <span>Add to Garden</span>
+                  </>
+                )}
+              </button>
+            )}
+          </div>
+
+          <button
+            type="button"
+            onClick={(e) => onToggleFavorite(plant.id, e)}
+            className="p-1 rounded-full text-stone-400 hover:text-rose-600 hover:bg-stone-100 transition-colors shrink-0"
+            title={plant.isFavorite ? 'Remove from favorites' : 'Add to favorites'}
+            aria-label={plant.isFavorite ? 'Remove from favorites' : 'Add to favorites'}
+          >
+            <Heart
+              className={`w-4 h-4 transition-transform group-hover:scale-110 ${
+                plant.isFavorite ? 'fill-rose-500 text-rose-500' : 'text-stone-400'
+              }`}
+            />
+          </button>
+        </div>
+
+        {/* Thumbnail Image + Plant Titles */}
+        <div className="flex items-start gap-3.5">
+          {/* Plant Photo Thumbnail */}
+          <div className="relative shrink-0">
+            <PlantImage
+              plant={plant}
+              aspectRatio="thumb"
+              className={`rounded-2xl shadow-xs border transition-shadow ${
+                isOwned ? 'border-emerald-200/90 group-hover:shadow-md' : 'border-stone-200/80'
+              }`}
+            />
+          </div>
+
+          {/* Plant Name, Botanical, Hindi */}
+          <div className="min-w-0 flex-1">
+            <h3 className="text-base font-bold text-stone-900 group-hover:text-emerald-900 transition-colors line-clamp-1">
+              {plant.name}
+            </h3>
+
+            {plant.hindiName && (
+              <p className="text-[11px] font-medium text-emerald-800/80 truncate">
+                {plant.hindiName}
+              </p>
+            )}
+
+            {plant.botanicalName && (
+              <p className="text-xs italic text-stone-500 font-serif truncate">
+                {plant.botanicalName}
+              </p>
+            )}
+          </div>
+        </div>
+
+        {/* Overdue Fertilizer Notification Banner (ONLY for plants in My Garden) */}
+        {isOwned && fertilizerStatus.isOverdue && (
+          <div className="mt-2.5 px-2.5 py-1 bg-amber-50 border border-amber-200/80 rounded-xl flex items-center justify-between text-[11px] text-amber-900 font-bold">
+            <span className="flex items-center gap-1">
+              <AlertTriangle className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+              <span>Feed Overdue</span>
+            </span>
+            <span className="text-[10px] font-semibold text-amber-800 bg-amber-200/60 px-1.5 py-0.2 rounded-md">
+              {fertilizerStatus.status === 'not_set' ? 'Not recorded' : fertilizerStatus.statusLabel}
+            </span>
+          </div>
+        )}
+
+        {/* Quick Specs Grid: Sunlight, Water, Pot */}
+        <div className="mt-3 grid grid-cols-2 gap-2 text-xs text-stone-700 bg-[#fbf9f4] p-2.5 rounded-2xl border border-stone-200/60">
+          <div className="flex items-center gap-1.5 min-w-0">
+            <Sun className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+            <span className="truncate">{plant.sunlightRequirement.type}</span>
+          </div>
+          <div className="flex items-center gap-1.5 min-w-0">
+            <Droplets className="w-3.5 h-3.5 text-sky-600 shrink-0" />
+            <span className="truncate">{plant.waterRequirement.level} water</span>
+          </div>
+        </div>
+
+        {/* Blooming Season Tag / Pot Size */}
+        <div className="mt-2.5 flex items-center justify-between text-xs text-stone-500">
+          <span className="text-[11px] font-medium text-stone-600">
+            Pot: <strong className="text-stone-800 font-semibold">{plant.potSizeRequired.sizeInches}</strong>
+          </span>
+
+          {isBloomingNow && (
+            <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-rose-700 bg-rose-50 border border-rose-200/70 px-2 py-0.5 rounded-full animate-pulse">
+              <Flower2 className="w-3 h-3 text-rose-500" />
+              <span>Blooming now</span>
+            </span>
+          )}
+        </div>
+      </div>
+
+      {/* Card Footer */}
+      <div className="mt-3.5 pt-2.5 border-t border-stone-100 flex items-center justify-between text-[11px]">
+        <span className="text-emerald-800 font-bold group-hover:underline flex items-center gap-1">
+          <span>View Care Guide</span>
+          <span className="group-hover:translate-x-0.5 transition-transform">→</span>
+        </span>
+        <span className="text-stone-500 font-medium">
+          {plant.diseasesAndPests.length} {plant.diseasesAndPests.length === 1 ? 'remedy' : 'remedies'}
+        </span>
+      </div>
+    </div>
+  );
+};
+

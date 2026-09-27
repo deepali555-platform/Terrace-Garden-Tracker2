@@ -82,6 +82,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           message = 'Sign-in popup was blocked by your browser. Please allow popups for this site.';
         } else if (err.message.includes('network-request-failed')) {
           message = 'Network error while contacting Google. Please check your internet connection.';
+        } else if (err.message.includes('auth/unauthorized-domain')) {
+          const currentHost = typeof window !== 'undefined' ? window.location.hostname : '';
+          message = `UNAUTHORIZED_DOMAIN:${currentHost}`;
         } else {
           message = err.message;
         }

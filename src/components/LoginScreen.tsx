@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { Sprout, ShieldCheck, Sparkles, Bell, Camera, AlertCircle } from 'lucide-react';
+import { Sprout, ShieldCheck, Sparkles, Bell, Camera, AlertCircle, Copy, Check, ExternalLink, Globe } from 'lucide-react';
 
 interface LoginScreenProps {
   onContinueAsGuest?: () => void;
@@ -9,6 +9,20 @@ interface LoginScreenProps {
 export const LoginScreen: React.FC<LoginScreenProps> = ({ onContinueAsGuest }) => {
   const { signInWithGoogle, continueAsGuest, authError, clearAuthError } = useAuth();
   const [isSigningIn, setIsSigningIn] = useState(false);
+  const [copiedDomain, setCopiedDomain] = useState(false);
+
+  const isUnauthorizedDomain = Boolean(authError?.startsWith('UNAUTHORIZED_DOMAIN:'));
+  const currentHostname = (authError && authError.startsWith('UNAUTHORIZED_DOMAIN:'))
+    ? authError.replace('UNAUTHORIZED_DOMAIN:', '')
+    : (typeof window !== 'undefined' ? window.location.hostname : '');
+
+  const handleCopyDomain = () => {
+    if (currentHostname) {
+      navigator.clipboard.writeText(currentHostname);
+      setCopiedDomain(true);
+      setTimeout(() => setCopiedDomain(false), 2500);
+    }
+  };
 
   const handleGoogleSignIn = async () => {
     setIsSigningIn(true);
@@ -81,22 +95,101 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onContinueAsGuest }) =
             </div>
           </div>
 
-          {/* Error Notice */}
+          {/* Error Notice / Domain Authorization Helper */}
           {authError && (
-            <div className="p-3 bg-rose-50 border border-rose-200 rounded-2xl flex items-start gap-2 text-xs text-rose-800">
-              <AlertCircle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
-              <div className="flex-1">
-                <span className="font-bold block">Sign-in Notice:</span>
-                <p className="mt-0.5 leading-relaxed">{authError}</p>
-                <button
-                  type="button"
-                  onClick={clearAuthError}
-                  className="mt-1 text-[11px] underline font-semibold text-rose-900"
-                >
-                  Dismiss
-                </button>
+            isUnauthorizedDomain ? (
+              <div className="p-4 bg-amber-50/90 border border-amber-300 rounded-2xl text-xs text-amber-950 space-y-3 shadow-2xs">
+                <div className="flex items-start gap-2">
+                  <Globe className="w-4 h-4 text-amber-700 shrink-0 mt-0.5" />
+                  <div className="flex-1">
+                    <span className="font-bold text-stone-900 block text-xs">
+                      Domain Authorization Required
+                    </span>
+                    <p className="text-[11px] text-stone-600 mt-0.5 leading-relaxed">
+                      Google OAuth requires your current app hosting domain to be added to Authorized Domains in your Firebase project.
+                    </p>
+                  </div>
+                </div>
+
+                {/* Domain display & copy button */}
+                <div className="p-2.5 bg-white rounded-xl border border-amber-200 flex items-center justify-between gap-2">
+                  <div className="min-w-0">
+                    <span className="text-[10px] text-stone-600 font-semibold block uppercase tracking-wider">
+                      Your App Domain:
+                    </span>
+                    <code className="text-xs font-mono font-bold text-emerald-950 truncate block mt-0.5 select-all">
+                      {currentHostname}
+                    </code>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleCopyDomain}
+                    className="shrink-0 px-3 py-1.5 rounded-lg bg-emerald-800 hover:bg-emerald-900 text-white font-bold text-xs flex items-center gap-1.5 transition-all active:scale-95 shadow-2xs cursor-pointer min-h-[36px]"
+                  >
+                    {copiedDomain ? (
+                      <>
+                        <Check className="w-3.5 h-3.5 text-emerald-200" />
+                        <span>Copied!</span>
+                      </>
+                    ) : (
+                      <>
+                        <Copy className="w-3.5 h-3.5" />
+                        <span>Copy</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+
+                {/* 3 Step Instructions */}
+                <div className="space-y-1 text-[11px] text-stone-600 bg-amber-100/50 p-2.5 rounded-xl border border-amber-200/70">
+                  <p className="font-bold text-stone-900">How to authorize in 30 seconds:</p>
+                  <ol className="list-decimal list-inside space-y-1 text-stone-700">
+                    <li>
+                      Open{' '}
+                      <a
+                        href="https://console.firebase.google.com/project/gen-lang-client-0986255984/authentication/settings"
+                        target="_blank"
+                        rel="noreferrer"
+                        className="text-emerald-900 underline font-bold inline-flex items-center gap-0.5"
+                      >
+                        Firebase Console Settings
+                        <ExternalLink className="w-3 h-3 inline" />
+                      </a>
+                    </li>
+                    <li>Click <strong>&quot;Add domain&quot;</strong> under Authorized domains.</li>
+                    <li>Paste <code className="bg-white/80 px-1 py-0.5 rounded text-[10px]">{currentHostname}</code> and click <strong>Save</strong>.</li>
+                  </ol>
+                </div>
+
+                <div className="flex items-center justify-between pt-1">
+                  <span className="text-[11px] text-stone-500">
+                    After adding, click &quot;Continue with Google&quot; below.
+                  </span>
+                  <button
+                    type="button"
+                    onClick={clearAuthError}
+                    className="text-[11px] underline font-semibold text-stone-600 hover:text-stone-900"
+                  >
+                    Dismiss
+                  </button>
+                </div>
               </div>
-            </div>
+            ) : (
+              <div className="p-3 bg-rose-50 border border-rose-200 rounded-2xl flex items-start gap-2 text-xs text-rose-800">
+                <AlertCircle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
+                <div className="flex-1">
+                  <span className="font-bold block">Sign-in Notice:</span>
+                  <p className="mt-0.5 leading-relaxed">{authError}</p>
+                  <button
+                    type="button"
+                    onClick={clearAuthError}
+                    className="mt-1 text-[11px] underline font-semibold text-rose-900"
+                  >
+                    Dismiss
+                  </button>
+                </div>
+              </div>
+            )
           )}
 
           {/* Google Sign In Button */}

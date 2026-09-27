@@ -89,7 +89,7 @@ export const SeasonalRemindersView: React.FC<SeasonalRemindersViewProps> = ({
           {!isCurrentMonth && (
             <button
               onClick={() => setSelectedMonthIndex(currentMonthIndex)}
-              className="px-4 py-2 text-xs font-bold text-stone-950 bg-amber-400 hover:bg-amber-300 rounded-xl transition-all shadow-sm self-start sm:self-center"
+              className="min-h-[44px] px-4 py-2 text-xs font-bold text-stone-950 bg-amber-400 hover:bg-amber-300 rounded-xl transition-all shadow-sm self-start sm:self-center flex items-center justify-center active:scale-95"
             >
               Back to Current Month ({MONTHS[currentMonthIndex - 1].shortName})
             </button>
@@ -109,10 +109,11 @@ export const SeasonalRemindersView: React.FC<SeasonalRemindersViewProps> = ({
               return (
                 <button
                   key={m.index}
+                  type="button"
                   onClick={() => setSelectedMonthIndex(m.index)}
-                  className={`py-2 px-1 text-center rounded-xl text-xs font-medium transition-all ${
+                  className={`py-2 px-1 text-center rounded-xl text-xs font-medium transition-all min-h-[46px] flex flex-col items-center justify-center active:scale-95 ${
                     isSelected
-                      ? 'bg-amber-400 text-stone-950 font-extrabold shadow-md scale-105'
+                      ? 'bg-amber-400 text-stone-950 font-extrabold shadow-md scale-102 ring-2 ring-amber-300'
                       : isToday
                       ? 'bg-emerald-900/90 text-amber-300 border border-amber-400/80 font-bold'
                       : 'bg-black/25 text-emerald-100 hover:bg-black/40 border border-white/10'
@@ -167,10 +168,11 @@ export const SeasonalRemindersView: React.FC<SeasonalRemindersViewProps> = ({
           </div>
         </div>
 
-        <div className="flex items-center gap-1.5 bg-stone-100 p-1 rounded-xl self-start sm:self-center shrink-0">
+        <div className="flex items-center gap-1.5 bg-stone-100 p-1 rounded-xl w-full sm:w-auto self-start sm:self-center shrink-0">
           <button
+            type="button"
             onClick={() => setScope('garden')}
-            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
+            className={`flex-1 sm:flex-none min-h-[44px] px-3.5 py-2 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 active:scale-95 ${
               scope === 'garden'
                 ? 'bg-emerald-700 text-white shadow-2xs'
                 : 'text-stone-600 hover:text-stone-900'
@@ -180,8 +182,9 @@ export const SeasonalRemindersView: React.FC<SeasonalRemindersViewProps> = ({
             <span>My Garden ({gardenPlantsCount})</span>
           </button>
           <button
+            type="button"
             onClick={() => setScope('all')}
-            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
+            className={`flex-1 sm:flex-none min-h-[44px] px-3.5 py-2 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 active:scale-95 ${
               scope === 'all'
                 ? 'bg-stone-900 text-white shadow-2xs'
                 : 'text-stone-600 hover:text-stone-900'
@@ -193,10 +196,11 @@ export const SeasonalRemindersView: React.FC<SeasonalRemindersViewProps> = ({
       </div>
 
       {/* Task Category Filter Buttons */}
-      <div className="flex items-center gap-1.5 overflow-x-auto pb-1">
+      <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">
         <button
+          type="button"
           onClick={() => setActiveFilter('all')}
-          className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap shadow-xs ${
+          className={`min-h-[44px] px-3.5 sm:px-4 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap shadow-xs active:scale-95 ${
             activeFilter === 'all'
               ? 'bg-stone-900 text-white'
               : 'bg-white text-stone-600 border border-stone-200 hover:bg-stone-50'
@@ -206,8 +210,9 @@ export const SeasonalRemindersView: React.FC<SeasonalRemindersViewProps> = ({
         </button>
 
         <button
+          type="button"
           onClick={() => setActiveFilter('sowing')}
-          className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap flex items-center gap-1.5 shadow-xs ${
+          className={`min-h-[44px] px-3.5 sm:px-4 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap flex items-center gap-1.5 shadow-xs active:scale-95 ${
             activeFilter === 'sowing'
               ? 'bg-emerald-700 text-white'
               : 'bg-white text-stone-600 border border-stone-200 hover:bg-stone-50'
@@ -218,8 +223,9 @@ export const SeasonalRemindersView: React.FC<SeasonalRemindersViewProps> = ({
         </button>
 
         <button
+          type="button"
           onClick={() => setActiveFilter('pruning')}
-          className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap flex items-center gap-1.5 shadow-xs ${
+          className={`min-h-[44px] px-3.5 sm:px-4 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap flex items-center gap-1.5 shadow-xs active:scale-95 ${
             activeFilter === 'pruning'
               ? 'bg-teal-700 text-white'
               : 'bg-white text-stone-600 border border-stone-200 hover:bg-stone-50'
@@ -230,8 +236,9 @@ export const SeasonalRemindersView: React.FC<SeasonalRemindersViewProps> = ({
         </button>
 
         <button
+          type="button"
           onClick={() => setActiveFilter('repotting')}
-          className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap flex items-center gap-1.5 shadow-xs ${
+          className={`min-h-[44px] px-3.5 sm:px-4 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap flex items-center gap-1.5 shadow-xs active:scale-95 ${
             activeFilter === 'repotting'
               ? 'bg-amber-700 text-white'
               : 'bg-white text-stone-600 border border-stone-200 hover:bg-stone-50'
@@ -242,8 +249,9 @@ export const SeasonalRemindersView: React.FC<SeasonalRemindersViewProps> = ({
         </button>
 
         <button
+          type="button"
           onClick={() => setActiveFilter('blooming')}
-          className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap flex items-center gap-1.5 shadow-xs ${
+          className={`min-h-[44px] px-3.5 sm:px-4 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap flex items-center gap-1.5 shadow-xs active:scale-95 ${
             activeFilter === 'blooming'
               ? 'bg-rose-700 text-white'
               : 'bg-white text-stone-600 border border-stone-200 hover:bg-stone-50'

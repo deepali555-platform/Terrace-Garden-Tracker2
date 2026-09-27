@@ -29,17 +29,18 @@ export const Header: React.FC<HeaderProps> = ({
 
       <div className="max-w-6xl mx-auto flex items-center justify-between relative z-10 gap-3">
         {/* Zone 1: Brand title with leaf icon */}
-        <div className="flex items-center gap-2 shrink-0">
+        <div className="flex items-center gap-2 shrink-0 min-w-0">
           <button
+            type="button"
             onClick={() => onSelectTab('home')}
-            className="flex items-center gap-2.5 text-left group focus:outline-none"
+            className="flex items-center gap-2 text-left group focus:outline-none min-h-[44px] -ml-1 pl-1"
           >
-            <div className="w-9 h-9 rounded-2xl bg-emerald-600/90 text-white flex items-center justify-center font-bold shadow-xs border border-emerald-400/30 group-hover:scale-105 transition-transform">
+            <div className="w-9 h-9 rounded-2xl bg-emerald-600/90 text-white flex items-center justify-center font-bold shadow-xs border border-emerald-400/30 group-hover:scale-105 transition-transform shrink-0">
               <Leaf className="w-5 h-5 text-emerald-100 stroke-[2.2]" />
             </div>
-            <div>
-              <span className="text-lg font-bold tracking-tight text-white group-hover:text-emerald-300 transition-colors">
-                Terrace Garden Tracker
+            <div className="min-w-0">
+              <span className="text-sm sm:text-lg font-bold tracking-tight text-white group-hover:text-emerald-300 transition-colors truncate block">
+                Terrace Garden
               </span>
               <span className="hidden sm:block text-[10px] uppercase font-bold tracking-widest text-emerald-300/80 -mt-0.5">
                 Indian Balcony & Terrace
@@ -136,31 +137,35 @@ export const Header: React.FC<HeaderProps> = ({
         </nav>
 
         {/* Zone 3: Primary Action buttons */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
           {onOpenScanModal && (
             <button
+              type="button"
               onClick={onOpenScanModal}
-              className="flex items-center gap-1.5 px-3 py-2 text-xs sm:text-sm font-bold text-stone-900 bg-amber-400 hover:bg-amber-300 active:scale-[0.98] rounded-xl shadow-md border border-amber-300 transition-all whitespace-nowrap"
+              className="flex items-center justify-center gap-1.5 px-3 py-2 text-xs sm:text-sm font-bold text-stone-900 bg-amber-400 hover:bg-amber-300 active:scale-[0.98] rounded-xl shadow-md border border-amber-300 transition-all whitespace-nowrap min-h-[44px]"
               title="Scan plant with AI health camera"
             >
-              <Camera className="w-4 h-4 text-stone-900" />
-              <span>Scan Plant</span>
+              <Camera className="w-4 h-4 text-stone-900 stroke-[2.4]" />
+              <span>Scan</span>
             </button>
           )}
 
           <button
+            type="button"
             onClick={onOpenAddModal}
-            className="flex items-center gap-1.5 px-3.5 py-2 text-xs sm:text-sm font-bold text-white bg-emerald-600 hover:bg-emerald-500 active:scale-[0.98] rounded-xl shadow-md border border-emerald-400/40 transition-all whitespace-nowrap"
+            className="flex items-center justify-center gap-1.5 px-3 sm:px-3.5 py-2 text-xs sm:text-sm font-bold text-white bg-emerald-600 hover:bg-emerald-500 active:scale-[0.98] rounded-xl shadow-md border border-emerald-400/40 transition-all whitespace-nowrap min-h-[44px]"
+            title="Add Plant to Garden Tracker"
           >
             <Plus className="w-4 h-4 stroke-[2.75]" />
-            <span>Add Plant</span>
+            <span>Add</span>
           </button>
 
           {onResetDefaults && (
             <button
+              type="button"
               onClick={onResetDefaults}
               title="Reset default Indian plant list"
-              className="hidden xl:flex items-center gap-1.5 text-xs text-emerald-200 hover:text-white px-2.5 py-1.5 rounded-xl border border-emerald-800/80 bg-emerald-950/60 hover:bg-emerald-900 transition-colors whitespace-nowrap"
+              className="hidden xl:flex items-center justify-center gap-1.5 text-xs text-emerald-200 hover:text-white px-2.5 py-1.5 rounded-xl border border-emerald-800/80 bg-emerald-950/60 hover:bg-emerald-900 transition-colors whitespace-nowrap min-h-[44px]"
             >
               <RefreshCw className="w-3.5 h-3.5" />
             </button>

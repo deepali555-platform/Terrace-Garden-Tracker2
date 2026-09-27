@@ -1,6 +1,14 @@
 @import "tailwindcss";
 
 @layer base {
+  html, body {
+    overflow-x: hidden;
+    width: 100%;
+    margin: 0;
+    padding: 0;
+    -webkit-text-size-adjust: 100%;
+  }
+
   body {
     font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
     background-color: #f7f4ea;
@@ -8,6 +16,14 @@
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
+}
+
+.safe-area-pb {
+  padding-bottom: max(0.5rem, env(safe-area-inset-bottom));
+}
+
+.safe-area-pt {
+  padding-top: max(0.5rem, env(safe-area-inset-top));
 }
 
 /* Custom scrollbars for tidy modal & horizontal scrollers */

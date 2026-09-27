@@ -134,11 +134,11 @@ export const PlantDetailModal: React.FC<PlantDetailModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto bg-emerald-950/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-5">
-      <div className="bg-[#faf8f5] w-full max-w-3xl rounded-3xl shadow-2xl border border-stone-200 overflow-hidden flex flex-col max-h-[92vh] animate-in fade-in zoom-in-95 duration-150">
+    <div className="fixed inset-0 z-50 overflow-y-auto bg-emerald-950/70 backdrop-blur-xs flex items-center justify-center p-1.5 sm:p-5">
+      <div className="bg-[#faf8f5] w-full max-w-3xl rounded-3xl shadow-2xl border border-stone-200 overflow-hidden flex flex-col max-h-[96vh] sm:max-h-[92vh] animate-in fade-in zoom-in-95 duration-150">
         {/* HERO SECTION: Custom/Species Photo OR Botanical Illustrated Category Header */}
         {plant.customPhotoUrl || plant.imageUrl ? (
-          <div className="relative w-full h-60 sm:h-72 overflow-hidden bg-stone-900">
+          <div className="relative w-full h-56 sm:h-72 overflow-hidden bg-stone-900 shrink-0">
             <PlantImage
               plant={plant}
               aspectRatio="hero"
@@ -147,78 +147,88 @@ export const PlantDetailModal: React.FC<PlantDetailModalProps> = ({
             />
 
             {/* Measured Dark Gradient Scrim for WCAG AA Text Contrast */}
-            <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-black/20" />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/55 to-black/35" />
 
-            {/* Top Actions: Favorite, Edit, Delete, Close */}
-            <div className="absolute top-3.5 right-3.5 z-20 flex items-center gap-1.5">
+            {/* Top Navigation Row: Close on Left, Favorite/Edit/Delete on Right (Zero Collision) */}
+            <div className="absolute top-2.5 left-2.5 right-2.5 z-20 flex items-center justify-between">
               <button
-                onClick={(e) => onToggleFavorite(plant.id, e)}
-                className="p-2 rounded-full bg-black/40 hover:bg-black/60 text-white backdrop-blur-md transition-colors"
-                title="Toggle Favorite"
-                aria-label="Toggle Favorite"
-              >
-                <Heart
-                  className={`w-4 h-4 ${
-                    plant.isFavorite ? 'fill-rose-500 text-rose-500' : 'text-white'
-                  }`}
-                />
-              </button>
-              <button
-                onClick={() => onEdit(plant)}
-                className="p-2 rounded-full bg-black/40 hover:bg-black/60 text-white backdrop-blur-md transition-colors"
-                title="Edit Plant"
-                aria-label="Edit Plant"
-              >
-                <Pencil className="w-4 h-4" />
-              </button>
-              <button
-                onClick={() => setShowDeleteConfirm(true)}
-                className="p-2 rounded-full bg-black/40 hover:bg-rose-900/80 text-white backdrop-blur-md transition-colors"
-                title="Delete Plant"
-                aria-label="Delete Plant"
-              >
-                <Trash2 className="w-4 h-4" />
-              </button>
-              <button
+                type="button"
                 onClick={onClose}
-                className="p-2 rounded-full bg-black/40 hover:bg-black/60 text-white backdrop-blur-md transition-colors ml-1"
+                className="w-11 h-11 rounded-full bg-black/60 hover:bg-black/80 text-white backdrop-blur-md transition-colors flex items-center justify-center shadow-md active:scale-95"
                 title="Close"
                 aria-label="Close"
               >
-                <X className="w-4 h-4" />
+                <X className="w-5 h-5" />
               </button>
+
+              <div className="flex items-center gap-1.5">
+                <button
+                  type="button"
+                  onClick={(e) => onToggleFavorite(plant.id, e)}
+                  className="w-11 h-11 rounded-full bg-black/60 hover:bg-black/80 text-white backdrop-blur-md transition-colors flex items-center justify-center shadow-md active:scale-95"
+                  title="Toggle Favorite"
+                  aria-label="Toggle Favorite"
+                >
+                  <Heart
+                    className={`w-5 h-5 ${
+                      plant.isFavorite ? 'fill-rose-500 text-rose-500' : 'text-white'
+                    }`}
+                  />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => onEdit(plant)}
+                  className="w-11 h-11 rounded-full bg-black/60 hover:bg-black/80 text-white backdrop-blur-md transition-colors flex items-center justify-center shadow-md active:scale-95"
+                  title="Edit Plant"
+                  aria-label="Edit Plant"
+                >
+                  <Pencil className="w-4 h-4" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowDeleteConfirm(true)}
+                  className="w-11 h-11 rounded-full bg-black/60 hover:bg-rose-900/80 text-white backdrop-blur-md transition-colors flex items-center justify-center shadow-md active:scale-95"
+                  title="Delete Plant"
+                  aria-label="Delete Plant"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              </div>
             </div>
 
-            {/* Upload / Replace Photo Button & Scan Button */}
-            <div className="absolute top-3.5 left-3.5 z-20 flex items-center flex-wrap gap-2">
+            {/* Quick Action Pills: Scan & Photo Management */}
+            <div className="absolute top-15 left-2.5 right-2.5 z-20 flex items-center flex-wrap gap-2">
               {onOpenScanModal && (
                 <button
+                  type="button"
                   onClick={() => onOpenScanModal(plant)}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-600/90 hover:bg-emerald-500 text-white text-xs font-bold backdrop-blur-md border border-emerald-400/40 transition-all shadow-sm active:scale-95"
+                  className="min-h-[44px] flex items-center gap-1.5 px-3.5 py-2 rounded-full bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold backdrop-blur-md border border-emerald-400/40 transition-all shadow-md active:scale-95"
                   title="Diagnose plant health with AI camera scan"
                 >
-                  <Sparkles className="w-3.5 h-3.5 text-amber-300" />
-                  <span>Scan My Plant</span>
+                  <Sparkles className="w-4 h-4 text-amber-300" />
+                  <span>Scan Plant</span>
                 </button>
               )}
 
               <button
+                type="button"
                 onClick={() => fileInputRef.current?.click()}
                 disabled={isUploading}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-black/50 hover:bg-black/70 text-white text-xs font-semibold backdrop-blur-md border border-white/20 transition-all shadow-sm active:scale-95"
+                className="min-h-[44px] flex items-center gap-1.5 px-3.5 py-2 rounded-full bg-black/60 hover:bg-black/80 text-white text-xs font-semibold backdrop-blur-md border border-white/20 transition-all shadow-md active:scale-95"
               >
-                <Camera className="w-3.5 h-3.5 text-emerald-300" />
-                <span>{plant.customPhotoUrl ? 'Change My Photo' : 'Upload My Photo'}</span>
+                <Camera className="w-4 h-4 text-emerald-300" />
+                <span>{plant.customPhotoUrl ? 'Change Photo' : 'Upload Photo'}</span>
               </button>
 
               {plant.customPhotoUrl && (
                 <button
+                  type="button"
                   onClick={handleResetPhoto}
-                  className="flex items-center gap-1 px-2.5 py-1.5 rounded-full bg-black/50 hover:bg-black/70 text-white/90 text-xs font-medium backdrop-blur-md border border-white/20 transition-all"
+                  className="min-h-[44px] flex items-center gap-1 px-3 py-2 rounded-full bg-black/60 hover:bg-black/80 text-white/90 text-xs font-medium backdrop-blur-md border border-white/20 transition-all shadow-md"
                   title="Remove custom photo and return to species reference photo"
                 >
-                  <RotateCcw className="w-3 h-3 text-stone-300" />
-                  <span className="hidden sm:inline">Use Reference Photo</span>
+                  <RotateCcw className="w-3.5 h-3.5 text-stone-300" />
+                  <span className="hidden sm:inline">Reference</span>
                 </button>
               )}
 
@@ -232,10 +242,10 @@ export const PlantDetailModal: React.FC<PlantDetailModalProps> = ({
             </div>
 
             {/* Plant Titles Overlaid on Photo */}
-            <div className="absolute bottom-4 left-4 right-4 z-20 text-white">
-              <div className="flex flex-wrap items-center gap-2 mb-1.5">
+            <div className="absolute bottom-3 left-3 right-3 z-20 text-white">
+              <div className="flex flex-wrap items-center gap-1.5 mb-1">
                 <span
-                  className={`inline-flex items-center gap-1 px-3 py-0.5 rounded-full text-xs font-bold shadow-xs border ${accent.pillBadge}`}
+                  className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold shadow-xs border ${accent.pillBadge}`}
                 >
                   <Leaf className="w-3 h-3" />
                   <span>{plant.category}</span>
@@ -245,7 +255,7 @@ export const PlantDetailModal: React.FC<PlantDetailModalProps> = ({
                   <button
                     type="button"
                     onClick={() => onToggleInMyGarden(plant.id)}
-                    className={`inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full text-xs font-bold transition-all shadow-sm active:scale-95 ${
+                    className={`inline-flex items-center justify-center gap-1 px-3.5 py-1.5 rounded-full text-xs font-bold transition-all shadow-sm active:scale-95 min-h-[44px] ${
                       plant.inMyGarden
                         ? 'bg-emerald-500 hover:bg-rose-600 text-white border border-emerald-300/60'
                         : 'bg-white hover:bg-emerald-50 text-emerald-950 border border-white/80'
@@ -254,12 +264,12 @@ export const PlantDetailModal: React.FC<PlantDetailModalProps> = ({
                   >
                     {plant.inMyGarden ? (
                       <>
-                        <CheckCircle2 className="w-3.5 h-3.5 text-white stroke-[2.5]" />
+                        <CheckCircle2 className="w-4 h-4 text-white stroke-[2.5]" />
                         <span>In My Garden</span>
                       </>
                     ) : (
                       <>
-                        <Plus className="w-3.5 h-3.5 text-emerald-800 stroke-[2.5]" />
+                        <Plus className="w-4 h-4 text-emerald-800 stroke-[2.5]" />
                         <span>Add to My Garden</span>
                       </>
                     )}
@@ -267,32 +277,20 @@ export const PlantDetailModal: React.FC<PlantDetailModalProps> = ({
                 )}
 
                 {isBloomingNow && (
-                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-rose-500/90 text-white border border-rose-300/40 shadow-xs backdrop-blur-xs animate-pulse">
+                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-rose-500/90 text-white border border-rose-300/40 shadow-xs backdrop-blur-xs">
                     <Flower2 className="w-3 h-3 text-rose-200" />
-                    <span>Blooming This Month</span>
-                  </span>
-                )}
-
-                {plant.customPhotoUrl ? (
-                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-600/90 text-white border border-emerald-300/40">
-                    <Camera className="w-3 h-3 text-emerald-200" />
-                    <span>My Terrace Photo</span>
-                  </span>
-                ) : (
-                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-black/40 text-emerald-200 border border-emerald-400/30 backdrop-blur-xs">
-                    <Leaf className="w-3 h-3 text-emerald-300" />
-                    <span>Wikimedia Commons Species Photo</span>
+                    <span>Blooming</span>
                   </span>
                 )}
               </div>
 
-              <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight drop-shadow-md">
+              <h1 className="text-xl sm:text-3xl font-extrabold text-white tracking-tight drop-shadow-md truncate">
                 {plant.name}
               </h1>
 
-              <div className="flex items-center flex-wrap gap-2 text-xs sm:text-sm text-emerald-100/90 mt-0.5 font-medium drop-shadow-sm">
+              <div className="flex items-center flex-wrap gap-1.5 text-xs text-emerald-100/90 font-medium drop-shadow-sm">
                 {plant.botanicalName && (
-                  <span className="italic font-serif">{plant.botanicalName}</span>
+                  <span className="italic font-serif truncate max-w-[200px]">{plant.botanicalName}</span>
                 )}
                 {plant.botanicalName && plant.hindiName && <span>·</span>}
                 {plant.hindiName && (
@@ -302,12 +300,12 @@ export const PlantDetailModal: React.FC<PlantDetailModalProps> = ({
             </div>
           </div>
         ) : (
-          <div className="relative w-full p-6 sm:p-7 bg-gradient-to-br from-emerald-50/70 via-stone-50 to-amber-50/40 border-b border-stone-200/80">
+          <div className="relative w-full p-4 sm:p-6 bg-gradient-to-br from-emerald-50/80 via-stone-50 to-amber-50/50 border-b border-stone-200/80 shrink-0">
             {/* Top Bar inside Botanical Hero */}
-            <div className="flex items-start justify-between gap-4">
-              <div className="flex flex-wrap items-center gap-2 mb-2">
+            <div className="flex items-start justify-between gap-2">
+              <div className="flex flex-wrap items-center gap-1.5 mb-2">
                 <span
-                  className={`inline-flex items-center gap-1 px-3 py-0.5 rounded-full text-xs font-bold shadow-2xs border ${accent.pillBadge}`}
+                  className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold shadow-2xs border ${accent.pillBadge}`}
                 >
                   <Leaf className="w-3 h-3" />
                   <span>{plant.category}</span>
@@ -317,7 +315,7 @@ export const PlantDetailModal: React.FC<PlantDetailModalProps> = ({
                   <button
                     type="button"
                     onClick={() => onToggleInMyGarden(plant.id)}
-                    className={`inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full text-xs font-bold transition-all shadow-2xs active:scale-95 ${
+                    className={`inline-flex items-center justify-center gap-1 px-3.5 py-1.5 rounded-full text-xs font-bold transition-all shadow-2xs active:scale-95 min-h-[44px] ${
                       plant.inMyGarden
                         ? 'bg-emerald-100 hover:bg-rose-50 text-emerald-900 hover:text-rose-700 border border-emerald-300 hover:border-rose-300'
                         : 'bg-stone-100 hover:bg-emerald-100 text-stone-700 hover:text-emerald-900 border border-stone-300 hover:border-emerald-400'
@@ -326,12 +324,12 @@ export const PlantDetailModal: React.FC<PlantDetailModalProps> = ({
                   >
                     {plant.inMyGarden ? (
                       <>
-                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-700 stroke-[2.5]" />
+                        <CheckCircle2 className="w-4 h-4 text-emerald-700 stroke-[2.5]" />
                         <span>In My Garden</span>
                       </>
                     ) : (
                       <>
-                        <Plus className="w-3.5 h-3.5 text-stone-600 stroke-[2.5]" />
+                        <Plus className="w-4 h-4 text-stone-600 stroke-[2.5]" />
                         <span>Add to My Garden</span>
                       </>
                     )}
@@ -341,16 +339,17 @@ export const PlantDetailModal: React.FC<PlantDetailModalProps> = ({
                 {isBloomingNow && (
                   <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-rose-100 text-rose-800 border border-rose-200 shadow-2xs">
                     <Flower2 className="w-3 h-3 text-rose-600" />
-                    <span>Blooming This Month</span>
+                    <span>Blooming</span>
                   </span>
                 )}
               </div>
 
-              {/* Action Buttons */}
-              <div className="flex items-center gap-1.5 shrink-0">
+              {/* Action Buttons: 44px Touch Hitbox */}
+              <div className="flex items-center gap-1 shrink-0">
                 <button
+                  type="button"
                   onClick={(e) => onToggleFavorite(plant.id, e)}
-                  className="p-2 rounded-full bg-white hover:bg-stone-100 text-stone-600 border border-stone-200 shadow-2xs transition-colors"
+                  className="w-11 h-11 rounded-full bg-white hover:bg-stone-100 text-stone-600 border border-stone-200 shadow-2xs transition-colors flex items-center justify-center active:scale-95"
                   title="Toggle Favorite"
                   aria-label="Toggle Favorite"
                 >
@@ -361,24 +360,27 @@ export const PlantDetailModal: React.FC<PlantDetailModalProps> = ({
                   />
                 </button>
                 <button
+                  type="button"
                   onClick={() => onEdit(plant)}
-                  className="p-2 rounded-full bg-white hover:bg-stone-100 text-stone-600 border border-stone-200 shadow-2xs transition-colors"
+                  className="w-11 h-11 rounded-full bg-white hover:bg-stone-100 text-stone-600 border border-stone-200 shadow-2xs transition-colors flex items-center justify-center active:scale-95"
                   title="Edit Plant"
                   aria-label="Edit Plant"
                 >
                   <Pencil className="w-4 h-4" />
                 </button>
                 <button
+                  type="button"
                   onClick={() => setShowDeleteConfirm(true)}
-                  className="p-2 rounded-full bg-white hover:bg-rose-50 text-stone-600 hover:text-rose-700 border border-stone-200 shadow-2xs transition-colors"
+                  className="w-11 h-11 rounded-full bg-white hover:bg-rose-50 text-stone-600 hover:text-rose-700 border border-stone-200 shadow-2xs transition-colors flex items-center justify-center active:scale-95"
                   title="Delete Plant"
                   aria-label="Delete Plant"
                 >
                   <Trash2 className="w-4 h-4" />
                 </button>
                 <button
+                  type="button"
                   onClick={onClose}
-                  className="p-2 rounded-full bg-white hover:bg-stone-100 text-stone-600 border border-stone-200 shadow-2xs transition-colors ml-1"
+                  className="w-11 h-11 rounded-full bg-white hover:bg-stone-100 text-stone-600 border border-stone-200 shadow-2xs transition-colors flex items-center justify-center active:scale-95 ml-0.5"
                   title="Close"
                   aria-label="Close"
                 >
@@ -388,20 +390,20 @@ export const PlantDetailModal: React.FC<PlantDetailModalProps> = ({
             </div>
 
             {/* Botanical Graphic + Plant Titles */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mt-1">
-              <div className="flex items-center gap-4 min-w-0">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mt-2">
+              <div className="flex items-center gap-3 min-w-0">
                 <PlantImage
                   plant={plant}
                   aspectRatio="thumb"
-                  className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl shadow-xs border border-stone-200 shrink-0"
+                  className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl shadow-xs border border-stone-200 shrink-0"
                 />
                 <div className="min-w-0">
-                  <h1 className="text-2xl sm:text-3xl font-extrabold text-stone-900 tracking-tight">
+                  <h1 className="text-xl sm:text-2xl font-extrabold text-stone-900 tracking-tight truncate">
                     {plant.name}
                   </h1>
-                  <div className="flex items-center flex-wrap gap-2 text-xs sm:text-sm text-stone-600 mt-0.5 font-medium">
+                  <div className="flex items-center flex-wrap gap-1 text-xs text-stone-600 font-medium">
                     {plant.botanicalName && (
-                      <span className="italic font-serif">{plant.botanicalName}</span>
+                      <span className="italic font-serif truncate max-w-[180px]">{plant.botanicalName}</span>
                     )}
                     {plant.botanicalName && plant.hindiName && <span>·</span>}
                     {plant.hindiName && (
@@ -412,22 +414,24 @@ export const PlantDetailModal: React.FC<PlantDetailModalProps> = ({
               </div>
 
               {/* Action Buttons: Scan My Plant & Upload Photo */}
-              <div className="self-start sm:self-center shrink-0 flex items-center gap-2">
+              <div className="flex items-center gap-2 pt-1 sm:pt-0">
                 {onOpenScanModal && (
                   <button
+                    type="button"
                     onClick={() => onOpenScanModal(plant)}
-                    className="inline-flex items-center gap-2 px-3.5 py-2 rounded-2xl bg-amber-500 hover:bg-amber-600 text-stone-950 text-xs font-bold shadow-sm transition-all active:scale-95 border border-amber-400"
+                    className="min-h-[44px] inline-flex items-center gap-1.5 px-3.5 py-2 rounded-2xl bg-amber-500 hover:bg-amber-600 text-stone-950 text-xs font-bold shadow-sm transition-all active:scale-95 border border-amber-400"
                     title="Diagnose plant health with AI camera scan"
                   >
                     <Sparkles className="w-4 h-4 text-stone-900" />
-                    <span>Scan My Plant</span>
+                    <span>Scan Plant</span>
                   </button>
                 )}
 
                 <button
+                  type="button"
                   onClick={() => fileInputRef.current?.click()}
                   disabled={isUploading}
-                  className="inline-flex items-center gap-2 px-3.5 py-2 rounded-2xl bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold shadow-sm transition-all active:scale-95 border border-emerald-600"
+                  className="min-h-[44px] inline-flex items-center gap-1.5 px-3.5 py-2 rounded-2xl bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold shadow-sm transition-all active:scale-95 border border-emerald-600"
                 >
                   <Camera className="w-4 h-4 text-emerald-200" />
                   <span>Upload Photo</span>
@@ -446,15 +450,15 @@ export const PlantDetailModal: React.FC<PlantDetailModalProps> = ({
 
         {/* Delete Confirmation Banner */}
         {showDeleteConfirm && (
-          <div className="p-4 bg-rose-50 border-b border-rose-200 flex items-center justify-between gap-4">
+          <div className="p-4 bg-rose-50 border-b border-rose-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
             <div className="flex items-center gap-2 text-rose-900 text-sm">
               <AlertTriangle className="w-5 h-5 text-rose-600 shrink-0" />
               <span>Are you sure you want to delete <strong>{plant.name}</strong> from your tracker?</span>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 w-full sm:w-auto">
               <button
                 onClick={() => setShowDeleteConfirm(false)}
-                className="px-3 py-1.5 text-xs text-stone-700 bg-white border border-stone-200 rounded-lg hover:bg-stone-50"
+                className="min-h-[44px] flex-1 sm:flex-none px-4 py-2 text-xs font-semibold text-stone-700 bg-white border border-stone-200 rounded-xl hover:bg-stone-50"
               >
                 Cancel
               </button>
@@ -463,7 +467,7 @@ export const PlantDetailModal: React.FC<PlantDetailModalProps> = ({
                   onDelete(plant.id);
                   onClose();
                 }}
-                className="px-3 py-1.5 text-xs font-medium text-white bg-rose-700 rounded-lg hover:bg-rose-800"
+                className="min-h-[44px] flex-1 sm:flex-none px-4 py-2 text-xs font-bold text-white bg-rose-700 rounded-xl hover:bg-rose-800"
               >
                 Confirm Delete
               </button>
@@ -472,10 +476,10 @@ export const PlantDetailModal: React.FC<PlantDetailModalProps> = ({
         )}
 
         {/* Segmented Control Tabs */}
-        <div className="px-6 pt-3 border-b border-stone-200/70 bg-white flex items-center gap-2 overflow-x-auto">
+        <div className="px-3 sm:px-6 pt-2 border-b border-stone-200/70 bg-white flex items-center gap-1.5 overflow-x-auto scrollbar-none">
           <button
             onClick={() => setActiveTab('care')}
-            className={`px-4 py-2.5 text-xs sm:text-sm font-semibold border-b-2 transition-colors whitespace-nowrap ${
+            className={`min-h-[44px] px-3.5 py-2.5 text-xs sm:text-sm font-semibold border-b-2 transition-colors whitespace-nowrap ${
               activeTab === 'care'
                 ? 'border-emerald-700 text-emerald-950 font-bold'
                 : 'border-transparent text-stone-500 hover:text-stone-900'
@@ -485,7 +489,7 @@ export const PlantDetailModal: React.FC<PlantDetailModalProps> = ({
           </button>
           <button
             onClick={() => setActiveTab('calendar')}
-            className={`px-4 py-2.5 text-xs sm:text-sm font-semibold border-b-2 transition-colors whitespace-nowrap ${
+            className={`min-h-[44px] px-3.5 py-2.5 text-xs sm:text-sm font-semibold border-b-2 transition-colors whitespace-nowrap ${
               activeTab === 'calendar'
                 ? 'border-emerald-700 text-emerald-950 font-bold'
                 : 'border-transparent text-stone-500 hover:text-stone-900'
@@ -495,20 +499,20 @@ export const PlantDetailModal: React.FC<PlantDetailModalProps> = ({
           </button>
           <button
             onClick={() => setActiveTab('pests')}
-            className={`px-4 py-2.5 text-xs sm:text-sm font-semibold border-b-2 transition-colors whitespace-nowrap flex items-center gap-1.5 ${
+            className={`min-h-[44px] px-3.5 py-2.5 text-xs sm:text-sm font-semibold border-b-2 transition-colors whitespace-nowrap flex items-center gap-1.5 ${
               activeTab === 'pests'
                 ? 'border-emerald-700 text-emerald-950 font-bold'
                 : 'border-transparent text-stone-500 hover:text-stone-900'
             }`}
           >
             <span>Kitchen Remedies & Pests</span>
-            <span className="text-[11px] bg-emerald-100 text-emerald-800 px-1.5 py-0.2 rounded-full font-bold">
+            <span className="text-[11px] bg-emerald-100 text-emerald-800 px-1.5 py-0.5 rounded-full font-bold">
               {plant.diseasesAndPests.length}
             </span>
           </button>
           <button
             onClick={() => setActiveTab('scans')}
-            className={`px-4 py-2.5 text-xs sm:text-sm font-semibold border-b-2 transition-colors whitespace-nowrap flex items-center gap-1.5 ${
+            className={`min-h-[44px] px-3.5 py-2.5 text-xs sm:text-sm font-semibold border-b-2 transition-colors whitespace-nowrap flex items-center gap-1.5 ${
               activeTab === 'scans'
                 ? 'border-emerald-700 text-emerald-950 font-bold'
                 : 'border-transparent text-stone-500 hover:text-stone-900'
@@ -516,7 +520,7 @@ export const PlantDetailModal: React.FC<PlantDetailModalProps> = ({
           >
             <Sparkles className="w-3.5 h-3.5 text-amber-500" />
             <span>Health & Scans</span>
-            <span className="text-[11px] bg-amber-100 text-amber-900 px-1.5 py-0.2 rounded-full font-bold">
+            <span className="text-[11px] bg-amber-100 text-amber-900 px-1.5 py-0.5 rounded-full font-bold">
               {plant.scanHistory?.length || 0}
             </span>
           </button>
@@ -609,7 +613,7 @@ export const PlantDetailModal: React.FC<PlantDetailModalProps> = ({
                   </div>
 
                   {/* Fertilizer Schedule Tracker Box */}
-                  <div className="mt-1 pt-2.5 border-t border-emerald-100/70 bg-emerald-50/50 p-3 rounded-xl flex items-center justify-between gap-3">
+                  <div className="mt-1 pt-2.5 border-t border-emerald-100/70 bg-emerald-50/50 p-3 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                     <div className="text-xs">
                       <div className="text-stone-500 text-[11px]">
                         Last fed:{' '}
@@ -617,7 +621,7 @@ export const PlantDetailModal: React.FC<PlantDetailModalProps> = ({
                           {formatReadableDate(plant.lastFertilizedDate)}
                         </strong>
                       </div>
-                      <div className="text-emerald-950 font-bold mt-0.5 flex items-center gap-1.5">
+                      <div className="text-emerald-950 font-bold mt-0.5 flex items-center flex-wrap gap-1.5">
                         <span>Next due: {formatReadableDate(fertilizerSchedule.nextDueDate)}</span>
                         <span
                           className={`text-[10px] px-2 py-0.2 rounded-md ${
@@ -635,7 +639,7 @@ export const PlantDetailModal: React.FC<PlantDetailModalProps> = ({
                       <button
                         type="button"
                         onClick={handleQuickMarkFertilized}
-                        className={`shrink-0 px-3 py-1.5 rounded-xl text-xs font-bold transition-all shadow-xs active:scale-95 flex items-center gap-1.5 ${
+                        className={`w-full sm:w-auto min-h-[44px] justify-center shrink-0 px-4 py-2 rounded-xl text-xs font-bold transition-all shadow-xs active:scale-95 flex items-center gap-1.5 ${
                           justMarkedFertilized
                             ? 'bg-emerald-600 text-white'
                             : 'bg-emerald-800 hover:bg-emerald-900 text-white'
@@ -643,12 +647,12 @@ export const PlantDetailModal: React.FC<PlantDetailModalProps> = ({
                       >
                         {justMarkedFertilized ? (
                           <>
-                            <CheckCircle2 className="w-3.5 h-3.5" />
+                            <CheckCircle2 className="w-4 h-4 text-emerald-200" />
                             <span>Marked!</span>
                           </>
                         ) : (
                           <>
-                            <RotateCw className="w-3.5 h-3.5" />
+                            <RotateCw className="w-4 h-4 text-emerald-200" />
                             <span>Fed Today</span>
                           </>
                         )}
@@ -912,7 +916,7 @@ export const PlantDetailModal: React.FC<PlantDetailModalProps> = ({
                     <div className="pt-2">
                       <button
                         onClick={() => onToggleInMyGarden(plant.id)}
-                        className="inline-flex items-center gap-2 px-5 py-2.5 bg-emerald-700 hover:bg-emerald-800 text-white rounded-2xl text-xs font-bold shadow-md transition-all active:scale-95"
+                        className="min-h-[46px] inline-flex items-center gap-2 px-5 py-2.5 bg-emerald-700 hover:bg-emerald-800 text-white rounded-2xl text-xs sm:text-sm font-bold shadow-md transition-all active:scale-95"
                       >
                         <CheckCircle2 className="w-4 h-4 text-emerald-200" />
                         <span>Add to My Garden & Enable Scans</span>
@@ -940,7 +944,7 @@ export const PlantDetailModal: React.FC<PlantDetailModalProps> = ({
                     {onOpenScanModal && (
                       <button
                         onClick={() => onOpenScanModal(plant)}
-                        className="shrink-0 inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-2xl bg-amber-500 hover:bg-amber-400 text-stone-950 text-xs font-bold shadow-md transition-all active:scale-95"
+                        className="shrink-0 min-h-[46px] inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-2xl bg-amber-400 hover:bg-amber-300 text-stone-950 text-xs sm:text-sm font-bold shadow-md transition-all active:scale-95"
                       >
                         <Camera className="w-4 h-4 text-stone-900" />
                         <span>New Health Scan</span>
@@ -964,7 +968,7 @@ export const PlantDetailModal: React.FC<PlantDetailModalProps> = ({
                     <div className="pt-2">
                       <button
                         onClick={() => onOpenScanModal(plant)}
-                        className="inline-flex items-center gap-2 px-5 py-2.5 bg-emerald-800 hover:bg-emerald-900 text-white rounded-2xl text-xs font-bold shadow-xs transition-all active:scale-95"
+                        className="min-h-[46px] inline-flex items-center gap-2 px-5 py-2.5 bg-emerald-800 hover:bg-emerald-900 text-white rounded-2xl text-xs sm:text-sm font-bold shadow-xs transition-all active:scale-95"
                       >
                         <Sparkles className="w-4 h-4 text-amber-300" />
                         <span>Run First AI Health Scan</span>
@@ -1094,11 +1098,11 @@ export const PlantDetailModal: React.FC<PlantDetailModalProps> = ({
         </div>
 
         {/* Modal Footer */}
-        <div className="p-4 border-t border-stone-200/70 bg-white flex items-center justify-between text-xs text-stone-500">
-          <span>Terrace Garden Tracker Database</span>
+        <div className="p-3.5 sm:p-4 border-t border-stone-200/70 bg-white flex items-center justify-between text-xs text-stone-500">
+          <span className="truncate pr-2">Terrace Garden Tracker</span>
           <button
             onClick={onClose}
-            className="px-5 py-2 text-stone-800 font-semibold bg-stone-100 hover:bg-stone-200 border border-stone-200 rounded-xl transition-colors"
+            className="min-h-[44px] px-6 py-2.5 text-stone-800 font-bold bg-stone-100 hover:bg-stone-200 border border-stone-200 rounded-xl transition-colors active:scale-95 text-xs sm:text-sm shrink-0"
           >
             Close
           </button>

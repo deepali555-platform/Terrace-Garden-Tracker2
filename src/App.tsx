@@ -339,7 +339,7 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen bg-[#f7f4ea] text-stone-900 flex flex-col pb-20 md:pb-12">
+    <div className="min-h-screen bg-[#f7f4ea] text-stone-900 flex flex-col pb-36 lg:pb-16 overflow-x-hidden w-full">
       {/* 3-Zone Header */}
       <Header
         currentTab={currentTab}
@@ -359,27 +359,27 @@ export default function App() {
 
       {/* Toast Notification Banner */}
       {toastMessage && (
-        <div className="fixed top-16 right-4 z-50 bg-stone-900 text-white px-4 py-2.5 rounded-2xl shadow-xl border border-stone-700 flex items-center gap-2 text-xs sm:text-sm animate-in fade-in slide-in-from-top-2 duration-200">
+        <div className="fixed top-16 right-4 left-4 sm:left-auto sm:max-w-md z-50 bg-stone-900 text-white px-4 py-3 rounded-2xl shadow-xl border border-stone-700 flex items-center gap-2 text-xs sm:text-sm animate-in fade-in slide-in-from-top-2 duration-200">
           <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
-          <span>{toastMessage}</span>
+          <span className="leading-snug">{toastMessage}</span>
         </div>
       )}
 
       {/* Main Content Area */}
-      <main className="max-w-6xl w-full mx-auto px-4 sm:px-6 lg:px-8 pt-6 flex-1">
+      <main className="max-w-6xl w-full mx-auto px-3 sm:px-6 lg:px-8 pt-4 sm:pt-6 flex-1 space-y-5 sm:space-y-6">
         {/* VIEW 1: MY GARDEN (Owned Plants Only) */}
         {currentTab === 'my-garden' && (
-          <div className="space-y-6">
+          <div className="space-y-5 sm:space-y-6">
             {/* My Garden Hero Banner */}
-            <div className="bg-gradient-to-br from-[#0c2f1b] via-[#144929] to-[#1c5d36] text-stone-100 rounded-3xl p-6 sm:p-8 relative overflow-hidden shadow-md border border-emerald-700/40">
+            <div className="bg-gradient-to-br from-[#0c2f1b] via-[#144929] to-[#1c5d36] text-stone-100 rounded-3xl p-5 sm:p-8 relative overflow-hidden shadow-md border border-emerald-700/40">
               <div className="max-w-2xl relative z-10 space-y-2.5">
                 <div className="flex items-center gap-2 text-xs font-bold tracking-wider uppercase text-emerald-300">
                   <Sprout className="w-4 h-4 text-emerald-400" />
                   <span>My Active Terrace & Balcony Garden</span>
                 </div>
-                <h1 className="text-2xl sm:text-4xl font-extrabold tracking-tight text-white drop-shadow-sm flex items-center gap-3">
+                <h1 className="text-2xl sm:text-4xl font-extrabold tracking-tight text-white drop-shadow-sm flex items-center gap-2.5 flex-wrap">
                   <span>My Garden</span>
-                  <span className="text-sm sm:text-base font-bold bg-emerald-800/80 text-emerald-200 px-3 py-1 rounded-full border border-emerald-500/40">
+                  <span className="text-xs sm:text-base font-bold bg-emerald-800/80 text-emerald-200 px-3 py-0.5 sm:py-1 rounded-full border border-emerald-500/40">
                     {ownedPlants.length} {ownedPlants.length === 1 ? 'plant' : 'plants'}
                   </span>
                 </h1>
@@ -387,40 +387,40 @@ export default function App() {
                   Showing plants you actively grow. Personalized fertilizer schedules, seasonal pruning reminders, and AI health histories only track these plants.
                 </p>
 
-                {/* Quick Shortcuts */}
-                <div className="pt-2 flex flex-wrap items-center gap-2.5">
+                {/* Quick Shortcuts - Generous Mobile Touch Targets */}
+                <div className="pt-2 flex flex-wrap items-center gap-2">
                   <button
                     onClick={() => setCurrentTab('fertilizer')}
-                    className="inline-flex items-center gap-2 px-3.5 py-2 bg-emerald-950/70 hover:bg-emerald-900 text-xs font-bold text-emerald-100 rounded-xl border border-emerald-500/40 shadow-xs transition-all relative"
+                    className="min-h-[44px] inline-flex items-center gap-2 px-3.5 py-2.5 bg-emerald-950/70 hover:bg-emerald-900 text-xs font-bold text-emerald-100 rounded-xl border border-emerald-500/40 shadow-xs transition-all relative active:scale-95"
                   >
                     <Sparkles className="w-4 h-4 text-amber-300" />
                     <span>Fertilizer Schedule</span>
                     {overdueFertilizerCount > 0 && (
-                      <span className="bg-amber-400 text-stone-950 text-[10px] font-black px-1.5 py-0.2 rounded-full">
+                      <span className="bg-amber-400 text-stone-950 text-[10px] font-black px-1.5 py-0.5 rounded-full">
                         {overdueFertilizerCount} overdue
                       </span>
                     )}
                   </button>
                   <button
                     onClick={() => handleOpenScanModal()}
-                    className="inline-flex items-center gap-2 px-3.5 py-2 bg-amber-500 hover:bg-amber-400 text-stone-950 text-xs font-bold rounded-xl shadow-xs transition-all"
+                    className="min-h-[44px] inline-flex items-center gap-2 px-4 py-2.5 bg-amber-400 hover:bg-amber-300 text-stone-950 text-xs font-bold rounded-xl shadow-xs transition-all active:scale-95"
                   >
                     <Camera className="w-4 h-4 text-stone-900" />
                     <span>Scan Plant (AI)</span>
                   </button>
                   <button
                     onClick={() => setCurrentTab('reminders')}
-                    className="inline-flex items-center gap-2 px-3.5 py-2 bg-emerald-950/70 hover:bg-emerald-900 text-xs font-bold text-emerald-100 rounded-xl border border-emerald-500/40 shadow-xs transition-all"
+                    className="min-h-[44px] inline-flex items-center gap-2 px-3.5 py-2.5 bg-emerald-950/70 hover:bg-emerald-900 text-xs font-bold text-emerald-100 rounded-xl border border-emerald-500/40 shadow-xs transition-all active:scale-95"
                   >
                     <Calendar className="w-4 h-4 text-amber-300" />
                     <span>{currentMonthName} Reminders</span>
                   </button>
                   <button
                     onClick={() => setCurrentTab('home')}
-                    className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-white/10 hover:bg-white/20 text-xs font-bold text-white rounded-xl shadow-xs transition-all ml-auto border border-white/20"
+                    className="min-h-[44px] inline-flex items-center gap-1.5 px-3.5 py-2.5 bg-white/10 hover:bg-white/20 text-xs font-bold text-white rounded-xl shadow-xs transition-all border border-white/20 active:scale-95"
                   >
                     <BookOpen className="w-4 h-4 text-emerald-300" />
-                    <span>Browse All 21 Reference Plants</span>
+                    <span>Browse All 21 Plants</span>
                   </button>
                 </div>
               </div>
@@ -457,7 +457,7 @@ export default function App() {
                 <div className="pt-2 flex items-center justify-center gap-3">
                   <button
                     onClick={() => setCurrentTab('home')}
-                    className="inline-flex items-center gap-2 px-5 py-2.5 text-xs font-bold text-white bg-emerald-700 hover:bg-emerald-800 rounded-2xl shadow-md transition-all active:scale-95"
+                    className="min-h-[44px] inline-flex items-center gap-2 px-5 py-2.5 text-xs sm:text-sm font-bold text-white bg-emerald-700 hover:bg-emerald-800 rounded-2xl shadow-md transition-all active:scale-95"
                   >
                     <BookOpen className="w-4 h-4 text-emerald-200" />
                     <span>Browse 21 Reference Plants</span>
@@ -475,24 +475,25 @@ export default function App() {
                       value={gardenSearchQuery}
                       onChange={(e) => setGardenSearchQuery(e.target.value)}
                       placeholder="Search my garden..."
-                      className="w-full pl-9 pr-8 py-2 bg-stone-50 border border-stone-200 rounded-xl text-xs sm:text-sm text-stone-900 placeholder:text-stone-400 focus:outline-none focus:bg-white focus:ring-2 focus:ring-emerald-700"
+                      className="w-full min-h-[44px] pl-9 pr-8 py-2 bg-stone-50 border border-stone-200 rounded-xl text-base sm:text-sm text-stone-900 placeholder:text-stone-400 focus:outline-none focus:bg-white focus:ring-2 focus:ring-emerald-700"
                     />
                     {gardenSearchQuery && (
                       <button
                         onClick={() => setGardenSearchQuery('')}
-                        className="absolute right-2.5 top-1/2 -translate-y-1/2 text-stone-400 hover:text-stone-700"
+                        className="w-8 h-8 flex items-center justify-center absolute right-1.5 top-1/2 -translate-y-1/2 text-stone-400 hover:text-stone-700"
+                        title="Clear search"
                       >
-                        <X className="w-3.5 h-3.5" />
+                        <X className="w-4 h-4" />
                       </button>
                     )}
                   </div>
 
-                  <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0">
+                  <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0 scrollbar-none">
                     {['all', 'Flowering', 'Herb', 'Foliage', 'Vegetable', 'Succulent', 'Fruit'].map((cat) => (
                       <button
                         key={cat}
                         onClick={() => setGardenSelectedCategory(cat as PlantCategory | 'all')}
-                        className={`px-3 py-1 rounded-full text-xs font-semibold whitespace-nowrap transition-colors ${
+                        className={`min-h-[38px] px-3.5 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-colors active:scale-95 ${
                           gardenSelectedCategory === cat
                             ? 'bg-emerald-800 text-white shadow-2xs'
                             : 'bg-stone-100 text-stone-600 hover:bg-stone-200'
@@ -513,7 +514,7 @@ export default function App() {
                         setGardenSearchQuery('');
                         setGardenSelectedCategory('all');
                       }}
-                      className="text-xs text-emerald-800 underline font-bold"
+                      className="min-h-[44px] inline-flex items-center px-4 text-xs text-emerald-800 underline font-bold"
                     >
                       Clear search
                     </button>
@@ -541,7 +542,7 @@ export default function App() {
                   </div>
                   <button
                     onClick={() => setCurrentTab('home')}
-                    className="inline-flex items-center gap-1 font-bold text-emerald-800 hover:underline shrink-0"
+                    className="min-h-[44px] inline-flex items-center gap-1 font-bold text-emerald-800 hover:underline shrink-0"
                   >
                     <span>Open Reference Guide →</span>
                   </button>
@@ -571,25 +572,25 @@ export default function App() {
                   Comprehensive care instructions, sunlight requirements, potting mixes, and Indian kitchen remedies. Use the &quot;+ Add to Garden&quot; button on any plant you grow to track customized feeding schedules and seasonal tasks.
                 </p>
 
-                {/* Switcher & Action buttons */}
+                {/* Switcher & Action buttons - Generous touch targets */}
                 <div className="pt-2 flex flex-wrap items-center gap-2.5">
                   <button
                     onClick={() => setCurrentTab('my-garden')}
-                    className="inline-flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-xs font-bold text-white rounded-xl shadow-xs transition-all"
+                    className="min-h-[44px] inline-flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-xs font-bold text-white rounded-xl shadow-xs transition-all active:scale-95"
                   >
                     <Sprout className="w-4 h-4 text-emerald-200" />
                     <span>View My Garden ({ownedPlants.length})</span>
                   </button>
                   <button
                     onClick={() => handleOpenScanModal()}
-                    className="inline-flex items-center gap-2 px-3.5 py-2 bg-amber-500 hover:bg-amber-400 text-stone-950 text-xs font-bold rounded-xl shadow-xs transition-all"
+                    className="min-h-[44px] inline-flex items-center gap-2 px-4 py-2 bg-amber-400 hover:bg-amber-300 text-stone-950 text-xs font-bold rounded-xl shadow-xs transition-all active:scale-95"
                   >
                     <Camera className="w-4 h-4 text-stone-900" />
                     <span>Scan Plant (AI)</span>
                   </button>
                   <button
                     onClick={handleOpenAddModal}
-                    className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-emerald-800 hover:bg-emerald-700 text-xs font-bold text-white rounded-xl shadow-xs transition-all ml-auto border border-emerald-600/50"
+                    className="min-h-[44px] inline-flex items-center gap-1.5 px-4 py-2 bg-emerald-800 hover:bg-emerald-700 text-xs font-bold text-white rounded-xl shadow-xs transition-all ml-auto border border-emerald-600/50 active:scale-95"
                   >
                     <Plus className="w-4 h-4 stroke-[2.5]" />
                     <span>Add Custom Plant</span>
@@ -631,7 +632,7 @@ export default function App() {
                 <div className="pt-2 flex items-center justify-center gap-3">
                   <button
                     onClick={handleClearAllFilters}
-                    className="px-4 py-2 text-xs font-medium text-emerald-900 bg-emerald-50 hover:bg-emerald-100 rounded-xl transition-colors"
+                    className="min-h-[44px] px-4 py-2 text-xs font-medium text-emerald-900 bg-emerald-50 hover:bg-emerald-100 rounded-xl transition-colors active:scale-95"
                   >
                     Clear All Filters
                   </button>
@@ -658,21 +659,21 @@ export default function App() {
                 <span>Terrace Garden Tracker · Offline local storage</span>
               </div>
 
-              <div className="flex items-center flex-wrap gap-2">
+              <div className="flex items-center flex-wrap gap-2 w-full sm:w-auto">
                 {/* Export Backup */}
                 <button
                   onClick={handleExportJson}
-                  className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-stone-200 hover:bg-stone-50 rounded-xl text-stone-700 transition-colors"
+                  className="min-h-[44px] flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-3.5 py-2 bg-white border border-stone-200 hover:bg-stone-50 rounded-xl text-stone-700 transition-colors active:scale-95"
                   title="Download garden backup file"
                 >
-                  <Download className="w-3.5 h-3.5 text-stone-500" />
-                  <span>Backup Database (JSON)</span>
+                  <Download className="w-4 h-4 text-stone-500" />
+                  <span>Backup (JSON)</span>
                 </button>
 
                 {/* Import Backup */}
-                <label className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-stone-200 hover:bg-stone-50 rounded-xl text-stone-700 transition-colors cursor-pointer">
-                  <Upload className="w-3.5 h-3.5 text-stone-500" />
-                  <span>Restore Backup</span>
+                <label className="min-h-[44px] flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-3.5 py-2 bg-white border border-stone-200 hover:bg-stone-50 rounded-xl text-stone-700 transition-colors cursor-pointer active:scale-95">
+                  <Upload className="w-4 h-4 text-stone-500" />
+                  <span>Restore</span>
                   <input
                     type="file"
                     ref={fileInputRef}
@@ -685,10 +686,10 @@ export default function App() {
                 {/* Reset to Default 21 Indian Plants */}
                 <button
                   onClick={() => setShowResetConfirm(true)}
-                  className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-stone-200 hover:bg-stone-50 rounded-xl text-stone-700 transition-colors"
+                  className="min-h-[44px] flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-3.5 py-2 bg-white border border-stone-200 hover:bg-stone-50 rounded-xl text-stone-700 transition-colors active:scale-95"
                   title="Reset to 21 default Indian plants"
                 >
-                  <RotateCcw className="w-3.5 h-3.5 text-stone-500" />
+                  <RotateCcw className="w-4 h-4 text-stone-500" />
                   <span>Reset Database</span>
                 </button>
               </div>

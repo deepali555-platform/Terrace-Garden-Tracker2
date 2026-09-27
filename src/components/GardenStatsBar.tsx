@@ -53,8 +53,8 @@ export const GardenStatsBar: React.FC<GardenStatsBarProps> = ({
         tabIndex={onOpenFertilizer ? 0 : undefined}
         className={`p-3.5 sm:p-4 rounded-2xl border transition-all ${
           overdueFeedCount > 0
-            ? 'bg-amber-50/70 border-amber-300 hover:border-amber-500 cursor-pointer shadow-2xs'
-            : 'bg-white border-stone-200/80'
+            ? 'bg-amber-50/70 border-amber-300 hover:border-amber-500 cursor-pointer shadow-2xs active:scale-[0.98]'
+            : 'bg-white border-stone-200/80 cursor-pointer active:scale-[0.98]'
         }`}
         title={onOpenFertilizer ? 'Click to open Fertilizer Schedule' : undefined}
       >

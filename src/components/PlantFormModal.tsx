@@ -486,21 +486,22 @@ export const PlantFormModal: React.FC<PlantFormModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto bg-stone-900/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-5">
+    <div className="fixed inset-0 z-50 overflow-y-auto bg-stone-900/70 backdrop-blur-xs flex items-center justify-center p-2 sm:p-5">
       <div className="bg-white w-full max-w-3xl rounded-3xl shadow-2xl border border-stone-200 overflow-hidden flex flex-col max-h-[92vh]">
         {/* Modal Header */}
         <div className="p-4 sm:p-6 border-b border-stone-100 bg-stone-50 flex items-center justify-between">
-          <div>
-            <h2 className="text-xl font-bold text-stone-900">
-              {isEditing ? `Edit ${initialPlant?.name}` : 'Add Plant to Terrace Tracker'}
+          <div className="min-w-0 pr-2">
+            <h2 className="text-lg sm:text-xl font-bold text-stone-900 truncate">
+              {isEditing ? `Edit ${initialPlant?.name}` : 'Add Plant to Tracker'}
             </h2>
-            <p className="text-xs text-stone-500 mt-0.5">
+            <p className="text-xs text-stone-500 mt-0.5 line-clamp-1">
               Fill in the 12 terrace garden care specs and kitchen remedies.
             </p>
           </div>
           <button
+            type="button"
             onClick={onClose}
-            className="p-2 rounded-xl text-stone-400 hover:text-stone-800 hover:bg-stone-100 transition-colors"
+            className="min-w-[44px] min-h-[44px] p-2.5 rounded-xl text-stone-400 hover:text-stone-800 hover:bg-stone-100 transition-colors flex items-center justify-center shrink-0"
             title="Cancel"
             aria-label="Cancel"
           >
@@ -735,7 +736,7 @@ export const PlantFormModal: React.FC<PlantFormModalProps> = ({
                   placeholder="e.g. Tulsi, Desi Rose, Tomato"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  className="w-full px-3 py-2 bg-stone-50 border border-stone-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-700 text-stone-900"
+                  className="w-full min-h-[44px] px-3.5 py-2.5 bg-stone-50 border border-stone-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-700 text-base sm:text-sm text-stone-900"
                 />
               </div>
 
@@ -748,7 +749,7 @@ export const PlantFormModal: React.FC<PlantFormModalProps> = ({
                   placeholder="e.g. Ocimum tenuiflorum"
                   value={botanicalName}
                   onChange={(e) => setBotanicalName(e.target.value)}
-                  className="w-full px-3 py-2 bg-stone-50 border border-stone-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-700 text-stone-900 italic"
+                  className="w-full min-h-[44px] px-3.5 py-2.5 bg-stone-50 border border-stone-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-700 text-base sm:text-sm text-stone-900 italic"
                 />
               </div>
 
@@ -761,7 +762,7 @@ export const PlantFormModal: React.FC<PlantFormModalProps> = ({
                   placeholder="e.g. कृष्ण तुलसी / मीठा नीम"
                   value={hindiName}
                   onChange={(e) => setHindiName(e.target.value)}
-                  className="w-full px-3 py-2 bg-stone-50 border border-stone-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-700 text-stone-900"
+                  className="w-full min-h-[44px] px-3.5 py-2.5 bg-stone-50 border border-stone-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-700 text-base sm:text-sm text-stone-900"
                 />
               </div>
 
@@ -772,7 +773,7 @@ export const PlantFormModal: React.FC<PlantFormModalProps> = ({
                 <select
                   value={category}
                   onChange={(e) => setCategory(e.target.value as PlantCategory)}
-                  className="w-full px-3 py-2 bg-stone-50 border border-stone-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-700 text-stone-900"
+                  className="w-full min-h-[44px] px-3.5 py-2.5 bg-stone-50 border border-stone-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-700 text-base sm:text-sm text-stone-900"
                 >
                   {CATEGORIES.map((cat) => (
                     <option key={cat.id} value={cat.id}>
@@ -891,14 +892,14 @@ export const PlantFormModal: React.FC<PlantFormModalProps> = ({
                       type="button"
                       onClick={() => fileInputRef.current?.click()}
                       disabled={isProcessingPhoto}
-                      className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-emerald-800 hover:bg-emerald-900 text-white rounded-xl text-xs font-bold transition-all shadow-xs active:scale-95 cursor-pointer"
+                      className="min-h-[44px] inline-flex items-center gap-1.5 px-4 py-2.5 bg-emerald-800 hover:bg-emerald-900 text-white rounded-xl text-xs font-bold transition-all shadow-xs active:scale-95 cursor-pointer"
                     >
-                      <Camera className="w-3.5 h-3.5 text-emerald-200" />
+                      <Camera className="w-4 h-4 text-emerald-200" />
                       <span>
                         {customPhotoUrl
                           ? 'Change Uploaded Photo'
                           : imageUrl
-                          ? 'Upload Your Own Photo (Overrides Auto-fetched)'
+                          ? 'Upload Your Own Photo'
                           : 'Upload Plant Photo'}
                       </span>
                     </button>
@@ -907,9 +908,9 @@ export const PlantFormModal: React.FC<PlantFormModalProps> = ({
                       <button
                         type="button"
                         onClick={() => setCustomPhotoUrl('')}
-                        className="inline-flex items-center gap-1 px-3 py-2 bg-stone-200 hover:bg-stone-300 text-stone-800 rounded-xl text-xs font-semibold transition-colors cursor-pointer"
+                        className="min-h-[44px] inline-flex items-center gap-1 px-3.5 py-2.5 bg-stone-200 hover:bg-stone-300 text-stone-800 rounded-xl text-xs font-semibold transition-colors cursor-pointer active:scale-95"
                       >
-                        <RotateCcw className="w-3 h-3 text-stone-600" />
+                        <RotateCcw className="w-3.5 h-3.5 text-stone-600" />
                         <span>{imageUrl ? 'Revert to Auto-fetched Photo' : 'Use Category Icon Instead'}</span>
                       </button>
                     )}
@@ -922,9 +923,9 @@ export const PlantFormModal: React.FC<PlantFormModalProps> = ({
                           setAutoFetchedImageMatched(null);
                           setAutoFetchedImageTitle('');
                         }}
-                        className="inline-flex items-center gap-1 px-3 py-2 bg-stone-200 hover:bg-stone-300 text-stone-700 rounded-xl text-xs font-medium transition-colors cursor-pointer"
+                        className="min-h-[44px] inline-flex items-center gap-1 px-3.5 py-2.5 bg-stone-200 hover:bg-stone-300 text-stone-700 rounded-xl text-xs font-medium transition-colors cursor-pointer active:scale-95"
                       >
-                        <X className="w-3 h-3 text-stone-500" />
+                        <X className="w-3.5 h-3.5 text-stone-500" />
                         <span>Remove Auto-fetched Image</span>
                       </button>
                     )}
@@ -955,7 +956,7 @@ export const PlantFormModal: React.FC<PlantFormModalProps> = ({
                 <select
                   value={waterLevel}
                   onChange={(e) => setWaterLevel(e.target.value as WaterLevel)}
-                  className="w-full px-3 py-2 bg-stone-50 border border-stone-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-700 text-stone-900"
+                  className="w-full min-h-[44px] px-3.5 py-2.5 bg-stone-50 border border-stone-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-700 text-base sm:text-sm text-stone-900"
                 >
                   {WATER_OPTIONS.map((w) => (
                     <option key={w.id} value={w.id}>
@@ -974,7 +975,7 @@ export const PlantFormModal: React.FC<PlantFormModalProps> = ({
                   placeholder="e.g. Daily in summer; every 2 days in winter"
                   value={waterFrequency}
                   onChange={(e) => setWaterFrequency(e.target.value)}
-                  className="w-full px-3 py-2 bg-stone-50 border border-stone-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-700 text-stone-900"
+                  className="w-full min-h-[44px] px-3.5 py-2.5 bg-stone-50 border border-stone-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-700 text-base sm:text-sm text-stone-900"
                 />
               </div>
 
@@ -985,7 +986,7 @@ export const PlantFormModal: React.FC<PlantFormModalProps> = ({
                 <select
                   value={sunlightType}
                   onChange={(e) => setSunlightType(e.target.value as SunlightType)}
-                  className="w-full px-3 py-2 bg-stone-50 border border-stone-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-700 text-stone-900"
+                  className="w-full min-h-[44px] px-3.5 py-2.5 bg-stone-50 border border-stone-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-700 text-base sm:text-sm text-stone-900"
                 >
                   {SUNLIGHT_OPTIONS.map((s) => (
                     <option key={s.id} value={s.id}>
@@ -1004,7 +1005,7 @@ export const PlantFormModal: React.FC<PlantFormModalProps> = ({
                   placeholder="e.g. 6 to 8 hours direct sun"
                   value={sunHours}
                   onChange={(e) => setSunHours(e.target.value)}
-                  className="w-full px-3 py-2 bg-stone-50 border border-stone-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-700 text-stone-900"
+                  className="w-full min-h-[44px] px-3.5 py-2.5 bg-stone-50 border border-stone-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-700 text-base sm:text-sm text-stone-900"
                 />
               </div>
             </div>
@@ -1025,7 +1026,7 @@ export const PlantFormModal: React.FC<PlantFormModalProps> = ({
                   placeholder="e.g. Vermicompost, Mustard Cake tea, Cow Dung"
                   value={fertilizerType}
                   onChange={(e) => setFertilizerType(e.target.value)}
-                  className="w-full px-3 py-2 bg-stone-50 border border-stone-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-700 text-stone-900"
+                  className="w-full min-h-[44px] px-3.5 py-2.5 bg-stone-50 border border-stone-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-700 text-base sm:text-sm text-stone-900"
                 />
               </div>
 
@@ -1038,7 +1039,7 @@ export const PlantFormModal: React.FC<PlantFormModalProps> = ({
                   placeholder="e.g. Every 15 to 20 days"
                   value={fertilizerFrequency}
                   onChange={(e) => setFertilizerFrequency(e.target.value)}
-                  className="w-full px-3 py-2 bg-stone-50 border border-stone-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-700 text-stone-900"
+                  className="w-full min-h-[44px] px-3.5 py-2.5 bg-stone-50 border border-stone-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-700 text-base sm:text-sm text-stone-900"
                 />
               </div>
 
@@ -1050,7 +1051,7 @@ export const PlantFormModal: React.FC<PlantFormModalProps> = ({
                   type="date"
                   value={lastFertilizedDate}
                   onChange={(e) => setLastFertilizedDate(e.target.value)}
-                  className="w-full px-3 py-2 bg-stone-50 border border-stone-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-700 text-stone-900 text-xs"
+                  className="w-full min-h-[44px] px-3.5 py-2.5 bg-stone-50 border border-stone-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-700 text-base sm:text-sm text-stone-900"
                 />
               </div>
 
@@ -1063,7 +1064,7 @@ export const PlantFormModal: React.FC<PlantFormModalProps> = ({
                   placeholder="e.g. 12 to 14 inches"
                   value={potSizeInches}
                   onChange={(e) => setPotSizeInches(e.target.value)}
-                  className="w-full px-3 py-2 bg-stone-50 border border-stone-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-700 text-stone-900"
+                  className="w-full min-h-[44px] px-3.5 py-2.5 bg-stone-50 border border-stone-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-700 text-base sm:text-sm text-stone-900"
                 />
               </div>
 
@@ -1076,7 +1077,7 @@ export const PlantFormModal: React.FC<PlantFormModalProps> = ({
                   placeholder="e.g. 15–20 Liters (Terracotta or Grow bag)"
                   value={potVolumeLiters}
                   onChange={(e) => setPotVolumeLiters(e.target.value)}
-                  className="w-full px-3 py-2 bg-stone-50 border border-stone-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-700 text-stone-900"
+                  className="w-full min-h-[44px] px-3.5 py-2.5 bg-stone-50 border border-stone-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-700 text-base sm:text-sm text-stone-900"
                 />
               </div>
             </div>
@@ -1102,9 +1103,9 @@ export const PlantFormModal: React.FC<PlantFormModalProps> = ({
                     type="button"
                     key={m.index}
                     onClick={() => toggleMonth(sowingMonths, setSowingMonths, m.index)}
-                    className={`py-1.5 rounded-lg text-xs font-medium border transition-colors ${
+                    className={`py-2 sm:py-1.5 min-h-[40px] rounded-xl text-xs font-bold border transition-colors active:scale-95 ${
                       sowingMonths.includes(m.index)
-                        ? 'bg-emerald-800 text-white border-emerald-900'
+                        ? 'bg-emerald-800 text-white border-emerald-900 shadow-2xs'
                         : 'bg-stone-50 text-stone-600 border-stone-200 hover:bg-stone-100'
                     }`}
                   >
@@ -1117,7 +1118,7 @@ export const PlantFormModal: React.FC<PlantFormModalProps> = ({
                 placeholder="Season description, e.g. Feb–March and June–July"
                 value={sowingSeasonText}
                 onChange={(e) => setSowingSeasonText(e.target.value)}
-                className="w-full px-3 py-1.5 bg-stone-50 border border-stone-200 rounded-xl text-xs"
+                className="w-full min-h-[44px] px-3.5 py-2 bg-stone-50 border border-stone-200 rounded-xl text-base sm:text-sm text-stone-900"
               />
             </div>
 
@@ -1132,9 +1133,9 @@ export const PlantFormModal: React.FC<PlantFormModalProps> = ({
                     type="button"
                     key={m.index}
                     onClick={() => toggleMonth(pruningMonths, setPruningMonths, m.index)}
-                    className={`py-1.5 rounded-lg text-xs font-medium border transition-colors ${
+                    className={`py-2 sm:py-1.5 min-h-[40px] rounded-xl text-xs font-bold border transition-colors active:scale-95 ${
                       pruningMonths.includes(m.index)
-                        ? 'bg-emerald-800 text-white border-emerald-900'
+                        ? 'bg-emerald-800 text-white border-emerald-900 shadow-2xs'
                         : 'bg-stone-50 text-stone-600 border-stone-200 hover:bg-stone-100'
                     }`}
                   >
@@ -1147,7 +1148,7 @@ export const PlantFormModal: React.FC<PlantFormModalProps> = ({
                 placeholder="Pruning advice, e.g. Hard prune in Spring; pinch weekly"
                 value={pruningSeasonText}
                 onChange={(e) => setPruningSeasonText(e.target.value)}
-                className="w-full px-3 py-1.5 bg-stone-50 border border-stone-200 rounded-xl text-xs"
+                className="w-full min-h-[44px] px-3.5 py-2 bg-stone-50 border border-stone-200 rounded-xl text-base sm:text-sm text-stone-900"
               />
             </div>
 
@@ -1162,9 +1163,9 @@ export const PlantFormModal: React.FC<PlantFormModalProps> = ({
                     type="button"
                     key={m.index}
                     onClick={() => toggleMonth(repottingMonths, setRepottingMonths, m.index)}
-                    className={`py-1.5 rounded-lg text-xs font-medium border transition-colors ${
+                    className={`py-2 sm:py-1.5 min-h-[40px] rounded-xl text-xs font-bold border transition-colors active:scale-95 ${
                       repottingMonths.includes(m.index)
-                        ? 'bg-emerald-800 text-white border-emerald-900'
+                        ? 'bg-emerald-800 text-white border-emerald-900 shadow-2xs'
                         : 'bg-stone-50 text-stone-600 border-stone-200 hover:bg-stone-100'
                     }`}
                   >
@@ -1177,7 +1178,7 @@ export const PlantFormModal: React.FC<PlantFormModalProps> = ({
                 placeholder="Signs plant needs repotting (one per line)"
                 value={repottingSignsText}
                 onChange={(e) => setRepottingSignsText(e.target.value)}
-                className="w-full px-3 py-1.5 bg-stone-50 border border-stone-200 rounded-xl text-xs"
+                className="w-full px-3.5 py-2 bg-stone-50 border border-stone-200 rounded-xl text-base sm:text-sm text-stone-900"
               />
             </div>
 
@@ -1187,12 +1188,12 @@ export const PlantFormModal: React.FC<PlantFormModalProps> = ({
                 <label className="text-xs font-medium text-stone-700">
                   10. Flowering Season (If applicable)
                 </label>
-                <label className="inline-flex items-center gap-1.5 text-xs text-stone-600 cursor-pointer">
+                <label className="inline-flex items-center gap-1.5 text-xs text-stone-600 cursor-pointer min-h-[36px]">
                   <input
                     type="checkbox"
                     checked={isFlowering}
                     onChange={(e) => setIsFlowering(e.target.checked)}
-                    className="rounded text-emerald-800 focus:ring-emerald-700"
+                    className="w-4 h-4 rounded text-emerald-800 focus:ring-emerald-700"
                   />
                   <span>Is Flowering Plant</span>
                 </label>
@@ -1205,9 +1206,9 @@ export const PlantFormModal: React.FC<PlantFormModalProps> = ({
                         type="button"
                         key={m.index}
                         onClick={() => toggleMonth(floweringMonths, setFloweringMonths, m.index)}
-                        className={`py-1.5 rounded-lg text-xs font-medium border transition-colors ${
+                        className={`py-2 sm:py-1.5 min-h-[40px] rounded-xl text-xs font-bold border transition-colors active:scale-95 ${
                           floweringMonths.includes(m.index)
-                            ? 'bg-amber-700 text-white border-amber-800'
+                            ? 'bg-amber-700 text-white border-amber-800 shadow-2xs'
                             : 'bg-stone-50 text-stone-600 border-stone-200 hover:bg-stone-100'
                         }`}
                       >
@@ -1220,7 +1221,7 @@ export const PlantFormModal: React.FC<PlantFormModalProps> = ({
                     placeholder="Flowering description, e.g. Year-round, peaks March to October"
                     value={floweringSeasonText}
                     onChange={(e) => setFloweringSeasonText(e.target.value)}
-                    className="w-full px-3 py-1.5 bg-stone-50 border border-stone-200 rounded-xl text-xs"
+                    className="w-full min-h-[44px] px-3.5 py-2 bg-stone-50 border border-stone-200 rounded-xl text-base sm:text-sm text-stone-900"
                   />
                 </>
               )}
@@ -1236,9 +1237,9 @@ export const PlantFormModal: React.FC<PlantFormModalProps> = ({
               <button
                 type="button"
                 onClick={handleAddDisease}
-                className="inline-flex items-center gap-1 text-xs font-semibold text-emerald-900 bg-emerald-50 hover:bg-emerald-100 px-2.5 py-1.5 rounded-lg border border-emerald-200"
+                className="min-h-[44px] inline-flex items-center gap-1 text-xs font-bold text-emerald-950 bg-emerald-50 hover:bg-emerald-100 px-3.5 py-2 rounded-xl border border-emerald-300 active:scale-95"
               >
-                <Plus className="w-3.5 h-3.5" />
+                <Plus className="w-4 h-4 stroke-[2.5]" />
                 <span>Add Pest / Disease</span>
               </button>
             </div>
@@ -1252,13 +1253,14 @@ export const PlantFormModal: React.FC<PlantFormModalProps> = ({
                   <button
                     type="button"
                     onClick={() => handleRemoveDisease(idx)}
-                    className="absolute top-3 right-3 text-stone-400 hover:text-rose-600 p-1 rounded-lg"
+                    className="w-11 h-11 flex items-center justify-center absolute top-2 right-2 text-stone-400 hover:text-rose-600 rounded-xl active:scale-95 transition-colors"
                     title="Remove entry"
+                    aria-label="Remove disease entry"
                   >
                     <Trash2 className="w-4 h-4" />
                   </button>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pr-8">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pr-10">
                     <div>
                       <label className="block text-[11px] font-medium text-stone-700 mb-0.5">
                         Disease / Pest Name
@@ -1268,7 +1270,7 @@ export const PlantFormModal: React.FC<PlantFormModalProps> = ({
                         placeholder="e.g. Mealybugs, Powdery Mildew"
                         value={d.name}
                         onChange={(e) => handleUpdateDisease(idx, 'name', e.target.value)}
-                        className="w-full px-2.5 py-1.5 bg-white border border-stone-200 rounded-lg text-xs"
+                        className="w-full min-h-[44px] px-3 py-2 bg-white border border-stone-200 rounded-xl text-base sm:text-xs text-stone-900"
                       />
                     </div>
 
@@ -1279,7 +1281,7 @@ export const PlantFormModal: React.FC<PlantFormModalProps> = ({
                       <select
                         value={d.symptomType}
                         onChange={(e) => handleUpdateDisease(idx, 'symptomType', e.target.value)}
-                        className="w-full px-2.5 py-1.5 bg-white border border-stone-200 rounded-lg text-xs"
+                        className="w-full min-h-[44px] px-3 py-2 bg-white border border-stone-200 rounded-xl text-base sm:text-xs text-stone-900"
                       >
                         <option value="pests_visible">Visible Insects / Pests</option>
                         <option value="yellowing">Yellowing Leaves</option>
@@ -1302,13 +1304,13 @@ export const PlantFormModal: React.FC<PlantFormModalProps> = ({
                       placeholder="e.g. White cottony clusters at leaf joints"
                       value={d.symptoms}
                       onChange={(e) => handleUpdateDisease(idx, 'symptoms', e.target.value)}
-                      className="w-full px-2.5 py-1.5 bg-white border border-stone-200 rounded-lg text-xs"
+                      className="w-full min-h-[44px] px-3 py-2 bg-white border border-stone-200 rounded-xl text-base sm:text-xs text-stone-900"
                     />
                   </div>
 
                   {/* Home remedy sub-box */}
-                  <div className="bg-emerald-50/80 p-3 rounded-xl border border-emerald-200/80 space-y-2">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  <div className="bg-emerald-50/80 p-3.5 rounded-xl border border-emerald-200/80 space-y-2.5">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                       <div>
                         <label className="block text-[11px] font-semibold text-emerald-950 mb-0.5">
                           Indian Kitchen Remedy Name
@@ -1320,7 +1322,7 @@ export const PlantFormModal: React.FC<PlantFormModalProps> = ({
                           onChange={(e) =>
                             handleUpdateDisease(idx, 'homeRemedy_name', e.target.value)
                           }
-                          className="w-full px-2.5 py-1 bg-white border border-emerald-200 rounded-lg text-xs text-emerald-950"
+                          className="w-full min-h-[44px] px-3 py-2 bg-white border border-emerald-200 rounded-xl text-base sm:text-xs text-emerald-950"
                         />
                       </div>
                       <div>
@@ -1334,7 +1336,7 @@ export const PlantFormModal: React.FC<PlantFormModalProps> = ({
                           onChange={(e) =>
                             handleUpdateDisease(idx, 'homeRemedy_ingredients', e.target.value)
                           }
-                          className="w-full px-2.5 py-1 bg-white border border-emerald-200 rounded-lg text-xs text-emerald-950"
+                          className="w-full min-h-[44px] px-3 py-2 bg-white border border-emerald-200 rounded-xl text-base sm:text-xs text-emerald-950"
                         />
                       </div>
                     </div>
@@ -1350,7 +1352,7 @@ export const PlantFormModal: React.FC<PlantFormModalProps> = ({
                         onChange={(e) =>
                           handleUpdateDisease(idx, 'homeRemedy_prep', e.target.value)
                         }
-                        className="w-full px-2.5 py-1 bg-white border border-emerald-200 rounded-lg text-xs text-emerald-950"
+                        className="w-full min-h-[44px] px-3 py-2 bg-white border border-emerald-200 rounded-xl text-base sm:text-xs text-emerald-950"
                       />
                     </div>
                   </div>
@@ -1366,7 +1368,7 @@ export const PlantFormModal: React.FC<PlantFormModalProps> = ({
                       onChange={(e) =>
                         handleUpdateDisease(idx, 'conventionalTreatment', e.target.value)
                       }
-                      className="w-full px-2.5 py-1.5 bg-white border border-stone-200 rounded-lg text-xs"
+                      className="w-full min-h-[44px] px-3 py-2 bg-white border border-stone-200 rounded-xl text-base sm:text-xs text-stone-900"
                     />
                   </div>
                 </div>
@@ -1384,22 +1386,22 @@ export const PlantFormModal: React.FC<PlantFormModalProps> = ({
               placeholder="e.g. Kept on north balcony railing; needs afternoon shade net in May"
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
-              className="w-full px-3 py-2 bg-stone-50 border border-stone-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-700 text-stone-900"
+              className="w-full px-3.5 py-2.5 bg-stone-50 border border-stone-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-700 text-base sm:text-sm text-stone-900"
             />
           </div>
 
-          {/* Modal Actions */}
-          <div className="pt-4 border-t border-stone-100 flex items-center justify-end gap-3">
+          {/* Modal Actions - Thumb Friendly */}
+          <div className="pt-4 border-t border-stone-100 flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-end gap-2.5">
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 text-stone-700 font-medium bg-stone-100 hover:bg-stone-200 rounded-xl transition-colors"
+              className="min-h-[48px] px-5 py-2.5 text-stone-700 font-semibold bg-stone-100 hover:bg-stone-200 active:scale-[0.98] rounded-xl transition-colors flex items-center justify-center text-sm"
             >
               Cancel
             </button>
             <button
               type="submit"
-              className="px-5 py-2 font-medium text-white bg-emerald-900 hover:bg-emerald-950 rounded-xl shadow-xs transition-colors"
+              className="min-h-[48px] px-6 py-3 font-bold text-white bg-emerald-900 hover:bg-emerald-950 active:scale-[0.98] rounded-xl shadow-md transition-colors flex items-center justify-center text-sm"
             >
               {isEditing ? 'Save Changes' : 'Add to Garden'}
             </button>

@@ -47,15 +47,15 @@ export const PlantCard: React.FC<PlantCardProps> = ({
       <div>
         {/* Top Status Strip: Category + In My Garden Badge / Toggle + Favorite */}
         <div className="flex items-center justify-between gap-1.5 mb-2.5">
-          <div className="flex items-center gap-1.5 flex-wrap">
+          <div className="flex items-center gap-1.5 flex-wrap flex-1 min-w-0">
             <span
-              className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold tracking-tight border ${accent.pillBadge}`}
+              className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold tracking-tight border shrink-0 ${accent.pillBadge}`}
             >
-              <Leaf className="w-2.5 h-2.5" />
+              <Leaf className="w-3 h-3" />
               <span>{plant.category}</span>
             </span>
 
-            {/* In My Garden Toggle Button */}
+            {/* In My Garden Toggle Button - Generous Thumb Touch Target */}
             {onToggleGarden && (
               <button
                 type="button"
@@ -63,21 +63,21 @@ export const PlantCard: React.FC<PlantCardProps> = ({
                   e.stopPropagation();
                   onToggleGarden(plant.id, e);
                 }}
-                className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold tracking-tight transition-all active:scale-95 shadow-2xs ${
+                className={`inline-flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-full text-xs font-bold tracking-tight transition-all active:scale-95 shadow-2xs min-h-[44px] shrink-0 ${
                   isOwned
-                    ? 'bg-emerald-100 hover:bg-rose-50 text-emerald-900 hover:text-rose-700 border border-emerald-300 hover:border-rose-300'
-                    : 'bg-stone-100 hover:bg-emerald-100 text-stone-600 hover:text-emerald-900 border border-stone-200 hover:border-emerald-300'
+                    ? 'bg-emerald-100 hover:bg-rose-50 text-emerald-950 hover:text-rose-800 border border-emerald-300 hover:border-rose-300'
+                    : 'bg-stone-100 hover:bg-emerald-100 text-stone-800 hover:text-emerald-950 border border-stone-200 hover:border-emerald-300'
                 }`}
                 title={isOwned ? 'Currently In My Garden (Click to remove)' : 'Click to Add to My Garden'}
               >
                 {isOwned ? (
                   <>
-                    <CheckCircle2 className="w-3 h-3 text-emerald-700 shrink-0" />
-                    <span>In My Garden</span>
+                    <CheckCircle2 className="w-4 h-4 text-emerald-700 shrink-0 stroke-[2.4]" />
+                    <span>In Garden</span>
                   </>
                 ) : (
                   <>
-                    <Plus className="w-3 h-3 text-stone-500 shrink-0 stroke-[2.5]" />
+                    <Plus className="w-4 h-4 text-stone-700 shrink-0 stroke-[2.5]" />
                     <span>Add to Garden</span>
                   </>
                 )}
@@ -85,15 +85,16 @@ export const PlantCard: React.FC<PlantCardProps> = ({
             )}
           </div>
 
+          {/* Favorite Button - 44px Touch Hitbox */}
           <button
             type="button"
             onClick={(e) => onToggleFavorite(plant.id, e)}
-            className="p-1 rounded-full text-stone-400 hover:text-rose-600 hover:bg-stone-100 transition-colors shrink-0"
+            className="w-11 h-11 -mr-1.5 -mt-1 flex items-center justify-center rounded-full text-stone-400 hover:text-rose-600 hover:bg-stone-100 active:scale-90 transition-all shrink-0"
             title={plant.isFavorite ? 'Remove from favorites' : 'Add to favorites'}
             aria-label={plant.isFavorite ? 'Remove from favorites' : 'Add to favorites'}
           >
             <Heart
-              className={`w-4 h-4 transition-transform group-hover:scale-110 ${
+              className={`w-5 h-5 transition-transform group-hover:scale-110 ${
                 plant.isFavorite ? 'fill-rose-500 text-rose-500' : 'text-stone-400'
               }`}
             />
@@ -107,7 +108,7 @@ export const PlantCard: React.FC<PlantCardProps> = ({
             <PlantImage
               plant={plant}
               aspectRatio="thumb"
-              className={`rounded-2xl shadow-xs border transition-shadow ${
+              className={`w-16 h-16 rounded-2xl shadow-xs border transition-shadow ${
                 isOwned ? 'border-emerald-200/90 group-hover:shadow-md' : 'border-stone-200/80'
               }`}
             />
@@ -120,13 +121,13 @@ export const PlantCard: React.FC<PlantCardProps> = ({
             </h3>
 
             {plant.hindiName && (
-              <p className="text-[11px] font-medium text-emerald-800/80 truncate">
+              <p className="text-[11px] font-medium text-emerald-800/80 truncate mt-0.5">
                 {plant.hindiName}
               </p>
             )}
 
             {plant.botanicalName && (
-              <p className="text-xs italic text-stone-500 font-serif truncate">
+              <p className="text-xs italic text-stone-500 font-serif truncate mt-0.5">
                 {plant.botanicalName}
               </p>
             )}
@@ -174,12 +175,12 @@ export const PlantCard: React.FC<PlantCardProps> = ({
       </div>
 
       {/* Card Footer */}
-      <div className="mt-3.5 pt-2.5 border-t border-stone-100 flex items-center justify-between text-[11px]">
-        <span className="text-emerald-800 font-bold group-hover:underline flex items-center gap-1">
+      <div className="mt-3.5 pt-2.5 border-t border-stone-100 flex items-center justify-between text-xs min-h-[44px]">
+        <span className="text-emerald-800 font-bold group-hover:underline flex items-center gap-1 text-xs">
           <span>View Care Guide</span>
           <span className="group-hover:translate-x-0.5 transition-transform">→</span>
         </span>
-        <span className="text-stone-500 font-medium">
+        <span className="text-stone-500 font-medium text-[11px]">
           {plant.diseasesAndPests.length} {plant.diseasesAndPests.length === 1 ? 'remedy' : 'remedies'}
         </span>
       </div>

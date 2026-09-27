@@ -174,30 +174,31 @@ export const PlantHealthScannerModal: React.FC<PlantHealthScannerModalProps> = (
   };
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto bg-emerald-950/70 backdrop-blur-xs flex items-center justify-center p-3 sm:p-5">
+    <div className="fixed inset-0 z-50 overflow-y-auto bg-emerald-950/70 backdrop-blur-xs flex items-center justify-center p-2 sm:p-5">
       <div className="bg-[#faf8f4] w-full max-w-2xl rounded-3xl shadow-2xl border border-stone-200 overflow-hidden flex flex-col max-h-[92vh] animate-in fade-in zoom-in-95 duration-150">
         {/* Header */}
-        <div className="bg-[#0f381f] text-white p-5 flex items-center justify-between border-b border-emerald-900/60 relative">
-          <div className="flex items-center gap-2.5">
-            <div className="w-9 h-9 rounded-2xl bg-emerald-600/80 text-emerald-100 flex items-center justify-center shadow-xs border border-emerald-400/30">
+        <div className="bg-[#0f381f] text-white p-4 sm:p-5 flex items-center justify-between border-b border-emerald-900/60 relative">
+          <div className="flex items-center gap-2.5 min-w-0 pr-2">
+            <div className="w-9 h-9 rounded-2xl bg-emerald-600/80 text-emerald-100 flex items-center justify-center shadow-xs border border-emerald-400/30 shrink-0">
               <Camera className="w-5 h-5 text-emerald-200" />
             </div>
-            <div>
-              <h2 className="text-lg font-bold tracking-tight text-white flex items-center gap-2">
+            <div className="min-w-0">
+              <h2 className="text-base sm:text-lg font-bold tracking-tight text-white flex items-center gap-2 truncate">
                 <span>Plant Health Scanner</span>
-                <span className="text-[10px] uppercase font-bold tracking-widest px-2 py-0.5 rounded-full bg-emerald-800 text-emerald-200 border border-emerald-600/40">
+                <span className="text-[10px] uppercase font-bold tracking-widest px-2 py-0.5 rounded-full bg-emerald-800 text-emerald-200 border border-emerald-600/40 shrink-0">
                   AI Vision
                 </span>
               </h2>
-              <p className="text-xs text-emerald-200/80">
-                Visual health check, nutrient deficiency audit & Indian kitchen remedies
+              <p className="text-xs text-emerald-200/80 truncate">
+                Visual health check & Indian kitchen remedies
               </p>
             </div>
           </div>
 
           <button
+            type="button"
             onClick={onClose}
-            className="p-2 rounded-full bg-black/30 hover:bg-black/50 text-white/90 transition-colors"
+            className="min-w-[44px] min-h-[44px] p-2.5 rounded-full bg-black/30 hover:bg-black/50 text-white/90 transition-colors flex items-center justify-center shrink-0"
             title="Close"
           >
             <X className="w-4 h-4" />
@@ -221,7 +222,7 @@ export const PlantHealthScannerModal: React.FC<PlantHealthScannerModalProps> = (
                   setIsSaved(false);
                 }}
                 disabled={isAnalyzing}
-                className="w-full appearance-none px-3.5 py-2.5 bg-stone-50 border border-stone-200 rounded-xl text-xs sm:text-sm font-semibold text-stone-900 focus:outline-none focus:ring-2 focus:ring-emerald-600 pr-10 cursor-pointer"
+                className="w-full min-h-[46px] appearance-none px-3.5 py-2.5 bg-stone-50 border border-stone-200 rounded-xl text-base sm:text-sm font-semibold text-stone-900 focus:outline-none focus:ring-2 focus:ring-emerald-600 pr-10 cursor-pointer"
               >
                 {allPlants.some((p) => p.inMyGarden) && (
                   <optgroup label="🌿 Plants in My Garden">
@@ -267,7 +268,7 @@ export const PlantHealthScannerModal: React.FC<PlantHealthScannerModalProps> = (
                     setAssessmentResult(null);
                     setIsSaved(false);
                   }}
-                  className="text-emerald-800 hover:underline font-semibold"
+                  className="min-h-[36px] flex items-center text-emerald-800 hover:underline font-semibold"
                 >
                   Choose another photo
                 </button>
@@ -286,7 +287,7 @@ export const PlantHealthScannerModal: React.FC<PlantHealthScannerModalProps> = (
                 </div>
               </div>
             ) : (
-              <div className="border-2 border-dashed border-stone-300 hover:border-emerald-600 rounded-3xl p-6 sm:p-8 text-center bg-white transition-colors space-y-4">
+              <div className="border-2 border-dashed border-stone-300 hover:border-emerald-600 rounded-3xl p-5 sm:p-8 text-center bg-white transition-colors space-y-4">
                 <div className="w-14 h-14 rounded-2xl bg-emerald-50 text-emerald-700 flex items-center justify-center mx-auto border border-emerald-100">
                   <Camera className="w-7 h-7" />
                 </div>
@@ -299,16 +300,16 @@ export const PlantHealthScannerModal: React.FC<PlantHealthScannerModalProps> = (
                   </p>
                 </div>
 
-                <div className="flex items-center justify-center gap-3 pt-1">
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-center gap-2.5 pt-1">
                   {/* Camera capture button (mobile friendly) */}
                   <button
                     type="button"
                     onClick={() => cameraInputRef.current?.click()}
                     disabled={isCompressing}
-                    className="inline-flex items-center gap-2 px-4 py-2.5 bg-emerald-700 hover:bg-emerald-800 text-white rounded-2xl text-xs font-bold shadow-sm transition-all active:scale-95"
+                    className="w-full sm:w-auto min-h-[48px] inline-flex items-center justify-center gap-2 px-5 py-3 bg-emerald-700 hover:bg-emerald-800 text-white rounded-2xl text-xs sm:text-sm font-bold shadow-sm transition-all active:scale-95"
                   >
                     <Camera className="w-4 h-4" />
-                    <span>Take Photo</span>
+                    <span>Take Photo (Camera)</span>
                   </button>
 
                   {/* Upload from gallery */}
@@ -316,28 +317,28 @@ export const PlantHealthScannerModal: React.FC<PlantHealthScannerModalProps> = (
                     type="button"
                     onClick={() => fileInputRef.current?.click()}
                     disabled={isCompressing}
-                    className="inline-flex items-center gap-2 px-4 py-2.5 bg-stone-100 hover:bg-stone-200 text-stone-800 rounded-2xl text-xs font-bold border border-stone-300 transition-all active:scale-95"
+                    className="w-full sm:w-auto min-h-[48px] inline-flex items-center justify-center gap-2 px-5 py-3 bg-stone-100 hover:bg-stone-200 text-stone-800 rounded-2xl text-xs sm:text-sm font-bold border border-stone-300 transition-all active:scale-95"
                   >
                     <Upload className="w-4 h-4" />
                     <span>Browse Gallery</span>
                   </button>
-
-                  <input
-                    type="file"
-                    ref={cameraInputRef}
-                    accept="image/*"
-                    capture="environment"
-                    onChange={handleFileChange}
-                    className="hidden"
-                  />
-                  <input
-                    type="file"
-                    ref={fileInputRef}
-                    accept="image/*"
-                    onChange={handleFileChange}
-                    className="hidden"
-                  />
                 </div>
+
+                <input
+                  type="file"
+                  ref={cameraInputRef}
+                  accept="image/*"
+                  capture="environment"
+                  onChange={handleFileChange}
+                  className="hidden"
+                />
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  accept="image/*"
+                  onChange={handleFileChange}
+                  className="hidden"
+                />
               </div>
             )}
           </div>
@@ -349,7 +350,7 @@ export const PlantHealthScannerModal: React.FC<PlantHealthScannerModalProps> = (
                 type="button"
                 onClick={handleRunHealthScan}
                 disabled={isAnalyzing}
-                className="w-full py-3.5 px-6 rounded-2xl bg-gradient-to-r from-emerald-800 to-emerald-700 hover:from-emerald-900 hover:to-emerald-800 text-white font-bold text-sm shadow-md flex items-center justify-center gap-2.5 transition-all active:scale-[0.99] disabled:opacity-75"
+                className="w-full min-h-[50px] py-3.5 px-6 rounded-2xl bg-gradient-to-r from-emerald-800 to-emerald-700 hover:from-emerald-900 hover:to-emerald-800 text-white font-bold text-sm sm:text-base shadow-md flex items-center justify-center gap-2.5 transition-all active:scale-[0.99] disabled:opacity-75"
               >
                 {isAnalyzing ? (
                   <>
@@ -509,7 +510,7 @@ export const PlantHealthScannerModal: React.FC<PlantHealthScannerModalProps> = (
               </div>
 
               {/* Action Buttons: Save to History / Scan Another */}
-              <div className="flex items-center justify-between gap-3 pt-1">
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5 pt-1">
                 <button
                   type="button"
                   onClick={() => {
@@ -517,7 +518,7 @@ export const PlantHealthScannerModal: React.FC<PlantHealthScannerModalProps> = (
                     setAssessmentResult(null);
                     setIsSaved(false);
                   }}
-                  className="px-4 py-2.5 text-xs font-bold text-stone-700 bg-white border border-stone-200 rounded-2xl hover:bg-stone-50 transition-colors"
+                  className="min-h-[44px] px-5 py-2.5 text-xs font-bold text-stone-700 bg-white border border-stone-200 rounded-2xl hover:bg-stone-50 active:scale-[0.98] transition-colors flex items-center justify-center"
                 >
                   Scan Another Photo
                 </button>
@@ -526,7 +527,7 @@ export const PlantHealthScannerModal: React.FC<PlantHealthScannerModalProps> = (
                   type="button"
                   onClick={handleSaveToHistory}
                   disabled={isSaved}
-                  className={`px-5 py-2.5 rounded-2xl text-xs font-bold transition-all shadow-sm flex items-center gap-1.5 ${
+                  className={`min-h-[48px] px-5 py-3 rounded-2xl text-xs sm:text-sm font-bold transition-all shadow-sm flex items-center justify-center gap-1.5 active:scale-[0.98] ${
                     isSaved
                       ? 'bg-emerald-600 text-white cursor-default'
                       : 'bg-emerald-800 hover:bg-emerald-900 text-white'
@@ -534,13 +535,13 @@ export const PlantHealthScannerModal: React.FC<PlantHealthScannerModalProps> = (
                 >
                   {isSaved ? (
                     <>
-                      <CheckCircle2 className="w-4 h-4" />
+                      <CheckCircle2 className="w-4 h-4 text-emerald-200" />
                       <span>Saved to {currentPlant?.name} Log!</span>
                     </>
                   ) : (
                     <>
                       <span>Save to Plant Health History</span>
-                      <ArrowRight className="w-3.5 h-3.5" />
+                      <ArrowRight className="w-4 h-4" />
                     </>
                   )}
                 </button>
@@ -550,11 +551,11 @@ export const PlantHealthScannerModal: React.FC<PlantHealthScannerModalProps> = (
         </div>
 
         {/* Footer */}
-        <div className="p-4 border-t border-stone-200/70 bg-white flex items-center justify-between text-xs text-stone-500">
-          <span>Terrace Garden AI Doctor</span>
+        <div className="p-3.5 sm:p-4 border-t border-stone-200/70 bg-white flex items-center justify-between text-xs text-stone-500">
+          <span className="truncate pr-2">Terrace Garden AI Doctor</span>
           <button
             onClick={onClose}
-            className="px-4 py-1.5 font-semibold text-stone-700 hover:bg-stone-100 rounded-xl"
+            className="min-h-[44px] px-5 py-2 font-bold text-stone-700 bg-stone-100 hover:bg-stone-200 border border-stone-200 rounded-xl transition-colors active:scale-95 text-xs sm:text-sm shrink-0"
           >
             Close
           </button>

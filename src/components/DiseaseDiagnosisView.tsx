@@ -86,7 +86,7 @@ export const DiseaseDiagnosisView: React.FC<DiseaseDiagnosisViewProps> = ({
             {selectedPlantId !== 'all' && (
               <button
                 onClick={() => setSelectedPlantId('all')}
-                className="text-xs text-teal-300 hover:text-white font-bold underline flex items-center gap-1"
+                className="min-h-[36px] text-xs text-teal-300 hover:text-white font-bold underline flex items-center gap-1"
               >
                 <RotateCcw className="w-3 h-3" />
                 Reset to All Plants
@@ -97,7 +97,7 @@ export const DiseaseDiagnosisView: React.FC<DiseaseDiagnosisViewProps> = ({
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2">
             <button
               onClick={() => setSelectedPlantId('all')}
-              className={`p-2.5 rounded-2xl border text-left transition-all ${
+              className={`p-2.5 min-h-[46px] rounded-2xl border text-left transition-all active:scale-95 ${
                 selectedPlantId === 'all'
                   ? 'bg-teal-400 text-stone-950 border-teal-300 font-extrabold shadow-md scale-102'
                   : 'bg-black/30 text-teal-100 border-white/10 hover:bg-black/50'
@@ -113,7 +113,7 @@ export const DiseaseDiagnosisView: React.FC<DiseaseDiagnosisViewProps> = ({
                 <button
                   key={p.id}
                   onClick={() => setSelectedPlantId(p.id)}
-                  className={`p-2 rounded-2xl border text-left transition-all flex items-center gap-2 ${
+                  className={`p-2 min-h-[46px] rounded-2xl border text-left transition-all flex items-center gap-2 active:scale-95 ${
                     isSelected
                       ? 'bg-teal-400 text-stone-950 border-teal-300 font-extrabold shadow-md scale-102'
                       : 'bg-black/30 text-teal-100 border-white/10 hover:bg-black/50'
@@ -144,7 +144,7 @@ export const DiseaseDiagnosisView: React.FC<DiseaseDiagnosisViewProps> = ({
             {selectedSymptom !== 'all' && (
               <button
                 onClick={() => setSelectedSymptom('all')}
-                className="text-xs text-teal-300 hover:text-white font-bold underline flex items-center gap-1"
+                className="min-h-[36px] text-xs text-teal-300 hover:text-white font-bold underline flex items-center gap-1"
               >
                 <RotateCcw className="w-3 h-3" />
                 Show All Symptoms
@@ -155,7 +155,7 @@ export const DiseaseDiagnosisView: React.FC<DiseaseDiagnosisViewProps> = ({
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-2">
             <button
               onClick={() => setSelectedSymptom('all')}
-              className={`p-3 rounded-2xl border text-left transition-all ${
+              className={`p-3 min-h-[48px] rounded-2xl border text-left transition-all active:scale-95 ${
                 selectedSymptom === 'all'
                   ? 'bg-teal-400 text-stone-950 border-teal-300 font-extrabold shadow-md'
                   : 'bg-black/30 text-teal-100 border-white/10 hover:bg-black/50'
@@ -171,7 +171,7 @@ export const DiseaseDiagnosisView: React.FC<DiseaseDiagnosisViewProps> = ({
                 <button
                   key={sym.type}
                   onClick={() => setSelectedSymptom(sym.type)}
-                  className={`p-3 rounded-2xl border text-left transition-all ${
+                  className={`p-3 min-h-[48px] rounded-2xl border text-left transition-all active:scale-95 ${
                     isSelected
                       ? 'bg-teal-400 text-stone-950 border-teal-300 font-extrabold shadow-md'
                       : 'bg-black/30 text-teal-100 border-white/10 hover:bg-black/50'
@@ -257,7 +257,7 @@ export const DiseaseDiagnosisView: React.FC<DiseaseDiagnosisViewProps> = ({
                     {onSelectPlantDetail && (
                       <button
                         onClick={() => onSelectPlantDetail(plant)}
-                        className="text-xs font-bold text-teal-900 hover:text-teal-950 flex items-center gap-1.5 self-start sm:self-center bg-teal-50 px-3.5 py-2 rounded-xl border border-teal-200 hover:bg-teal-100 transition-colors shadow-2xs"
+                        className="min-h-[44px] text-xs font-bold text-teal-950 flex items-center justify-center gap-1.5 self-stretch sm:self-center bg-teal-50 px-4 py-2.5 rounded-xl border border-teal-200 hover:bg-teal-100 transition-all shadow-2xs active:scale-95"
                       >
                         <span>Full Plant Guide</span>
                         <ArrowRight className="w-3.5 h-3.5" />

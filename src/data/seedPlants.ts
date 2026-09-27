@@ -1786,6 +1786,115 @@ const RAW_INITIAL_PLANTS: Plant[] = [
     ],
     notes: 'NASA Clean Air study top-performer! Highly effective at filtering indoor formaldehyde, xylene, and carbon monoxide. Baby plantlets ("spiderettes") hanging from arching stolons can be easily rooted in small glasses of water or directly in miniature pots.',
   },
+  {
+    id: 'sadabahar',
+    name: 'Sadabahar (Madagascar Periwinkle)',
+    botanicalName: 'Catharanthus roseus',
+    hindiName: 'सदाबहार / नयनतारा',
+    category: 'Flowering',
+    waterRequirement: {
+      level: 'Low',
+      frequency: 'Once every 2 to 3 days in summer; twice weekly in winter',
+      seasonalNote:
+        'Extremely drought-hardy. Water only when top 1.5 to 2 inches of potting mix is completely dry. Highly vulnerable to root rot if overwatered during monsoon.',
+    },
+    sunlightRequirement: {
+      type: 'Full Sun',
+      hoursNeeded: '5 to 6+ hours of direct sunlight',
+      summerTerraceNote:
+        'Loves hot, direct terrace sunlight. The more sun it receives, the more abundantly it flowers. Can thrive in 40°C+ summer heat.',
+    },
+    fertilizerRequirement: {
+      type: 'Steamed Bone Meal or Mustard Cake Liquid (Sarson Khali)',
+      npkOrOrganic:
+        'Organic blooming booster (low nitrogen, rich in phosphorus & potassium). Avoid high-nitrogen fertilizers which cause excessive leafy growth and reduce flower count.',
+      frequency: 'Every 30 to 45 days during active growth',
+    },
+    sowingTime: {
+      months: [2, 3, 6, 7],
+      seasonText: 'Spring (Feb–March) and Monsoon (June–July)',
+      method: 'Seeds sown 0.5cm deep or 4-inch semi-hardwood stem cuttings rooted in moist sand',
+    },
+    pruningTime: {
+      months: [2, 3, 9],
+      seasonText: 'Early Spring (Feb–March) and Post-Monsoon (September)',
+      frequency: 'Pinch growing tips every 4 to 6 weeks',
+      tips: 'Pinch terminal soft shoots regularly to prevent the plant from becoming leggy and stimulate bushier growth with dozens of flowering buds.',
+    },
+    repottingTime: {
+      months: [2, 3, 7],
+      seasonText: 'Early Spring (Feb–March) or early Monsoon (July)',
+      frequency: 'Once every 1 to 2 years',
+      signs: [
+        'Roots circling tightly at the base of the container',
+        'Water drains through too quickly without wetting the root ball',
+        'Bottom stems turn thick, bare, and woody',
+      ],
+    },
+    potSizeRequired: {
+      sizeInches: '8 to 10 inches',
+      volumeLiters: '5–8 Liters',
+      materialAdvice: 'Terracotta or porous clay pot with generous drainage holes to prevent soggy soil.',
+    },
+    floweringSeason: {
+      isFlowering: true,
+      months: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12],
+      seasonText:
+        'Year-round continuous blooms (Peaks in Summer & Monsoon); flowers non-stop on sunny Indian balconies.',
+    },
+    diseasesAndPests: [
+      {
+        id: 'sadabahar-rootrot',
+        name: 'Root Rot & Stem Blight (Phytophthora / Pythium)',
+        symptomType: 'wilting',
+        symptoms:
+          'Stems turn dark brown or mushy at the soil line, sudden wilting of branches while soil is still wet, lower leaves turning yellow and dropping.',
+        homeRemedy: {
+          name: 'Turmeric (Haldi) & Wood Ash Stem Drench with Aeration',
+          ingredients: '1 tsp pure turmeric powder + 1 tbsp fine wood ash + 500ml water',
+          preparationAndUse:
+            'Immediately stop watering and move the pot under rain shelter. Carefully loosen the topsoil with a khurpi to aerate. Drench the base with turmeric solution which possesses strong natural antifungal properties.',
+          frequency: 'Apply once, then withhold water until soil is dry',
+        },
+        conventionalTreatment:
+          'Drench root zone with Trichoderma viride bio-fungicide (5g/L) or Carbendazim (Bavistin) at 2g per liter.',
+      },
+      {
+        id: 'sadabahar-aphids',
+        name: 'Aphids & Mealybugs on Tender Tips',
+        symptomType: 'pests_visible',
+        symptoms:
+          'Clusters of tiny green/black aphids or cottony white mealybugs clustered around flower buds and tender branch tips.',
+        homeRemedy: {
+          name: 'Cold-Pressed Neem Oil & Mild Soap Spray',
+          ingredients: '5ml pure organic neem oil + 3 drops mild liquid soap + 1L lukewarm water',
+          preparationAndUse:
+            'Shake vigorously to emulsify the neem oil. Spray generously on the underside of leaves and around flower buds during evening hours when bees are inactive.',
+          frequency: 'Spray once every 4 to 5 days for 2-3 applications',
+        },
+        conventionalTreatment:
+          'Spray Acetamiprid 20% SP (0.5g/L) or Imidacloprid (0.5ml/L) for severe infestations.',
+      },
+      {
+        id: 'sadabahar-yellowing',
+        name: 'Leaf Yellowing / Iron Chlorosis',
+        symptomType: 'yellowing',
+        symptoms:
+          'Young leaves turning pale yellow or whitish while veins remain faintly green, often triggered by compact soil or overwatering.',
+        homeRemedy: {
+          name: 'Fermented Mustard Cake Liquid & Epsom Salt Drench',
+          ingredients: '1 tsp Epsom salt (Sendha Namak / Magnesium sulfate) + 1 tbsp vermicompost tea + 1L water',
+          preparationAndUse:
+            'Ensure drainage holes are unclogged. Water the plant with the magnesium-rich solution early in the morning to restore chlorophyll synthesis.',
+          frequency: 'Apply once every 3 weeks until green color restores',
+        },
+        conventionalTreatment:
+          'Foliar spray with Chelated Micronutrient fertilizer (Fe-EDTA 1g/L).',
+      },
+    ],
+    notes:
+      'True to its name "Sada-Bahar" (Perpetual Spring), this resilient plant flowers 365 days a year on Indian terraces! Revered in Ayurvedic medicine for blood glucose regulation (Catharanthus roseus is the natural source of vincristine and vinblastine). Requires virtually zero maintenance once established.',
+  },
 ];
 
 export const INITIAL_PLANTS: Plant[] = RAW_INITIAL_PLANTS.map((plant) => ({

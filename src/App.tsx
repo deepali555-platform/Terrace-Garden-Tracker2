@@ -483,31 +483,38 @@ export default function App() {
               </div>
             )}
 
-            {/* My Garden Hero Banner */}
-            <div className="bg-gradient-to-br from-[#0c2f1b] via-[#144929] to-[#1c5d36] text-stone-100 rounded-3xl p-5 sm:p-8 relative overflow-hidden shadow-md border border-emerald-700/40">
-              <div className="max-w-2xl relative z-10 space-y-2.5">
-                <div className="flex items-center gap-2 text-xs font-bold tracking-wider uppercase text-emerald-300">
-                  <Sprout className="w-4 h-4 text-emerald-400" />
-                  <span>My Active Terrace & Balcony Garden</span>
-                </div>
-                <h1 className="text-2xl sm:text-4xl font-extrabold tracking-tight text-white drop-shadow-sm flex items-center gap-2.5 flex-wrap">
-                  <span>My Garden</span>
-                  <span className="text-xs sm:text-base font-bold bg-emerald-800/80 text-emerald-200 px-3 py-0.5 sm:py-1 rounded-full border border-emerald-500/40">
+            {/* My Garden Hero Banner - Sleek, Responsive, Compact on Mobile */}
+            <div className="bg-gradient-to-br from-[#0c2f1b] via-[#144929] to-[#1c5d36] text-stone-100 rounded-2xl sm:rounded-3xl p-3.5 sm:p-6 lg:p-7 relative overflow-hidden shadow-md border border-emerald-700/40">
+              <div className="relative z-10 space-y-2 sm:space-y-3">
+                {/* Top Row: Subtitle tag + Plant Count Badge */}
+                <div className="flex items-center justify-between gap-2">
+                  <div className="inline-flex items-center gap-1.5 text-[10px] sm:text-xs font-bold tracking-wider uppercase text-emerald-300">
+                    <Sprout className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-emerald-400 shrink-0" />
+                    <span>My Active Terrace & Balcony</span>
+                  </div>
+                  <span className="text-[11px] sm:text-xs font-bold bg-emerald-800/90 text-emerald-200 px-2.5 py-0.5 rounded-full border border-emerald-500/40 shrink-0">
                     {ownedPlants.length} {ownedPlants.length === 1 ? 'plant' : 'plants'}
                   </span>
-                </h1>
-                <p className="text-xs sm:text-sm text-emerald-100/90 leading-relaxed max-w-xl">
-                  Showing plants you actively grow. Personalized fertilizer schedules, seasonal pruning reminders, and AI health histories only track these plants.
-                </p>
+                </div>
 
-                {/* Quick Shortcuts - Generous Mobile Touch Targets */}
-                <div className="pt-2 flex flex-wrap items-center gap-2">
+                {/* Main Heading & Concise Tagline */}
+                <div>
+                  <h1 className="text-xl sm:text-3xl font-extrabold tracking-tight text-white drop-shadow-sm">
+                    My Garden
+                  </h1>
+                  <p className="text-[11px] sm:text-xs text-emerald-100/90 leading-relaxed max-w-xl mt-0.5">
+                    Personalized feeding schedules, seasonal pruning reminders, and AI health logs.
+                  </p>
+                </div>
+
+                {/* Quick Shortcuts - Clean, non-cluttering responsive row */}
+                <div className="pt-1 flex flex-wrap items-center gap-1.5 sm:gap-2">
                   <button
                     onClick={() => setCurrentTab('fertilizer')}
-                    className="min-h-[44px] inline-flex items-center gap-2 px-3.5 py-2.5 bg-emerald-950/70 hover:bg-emerald-900 text-xs font-bold text-emerald-100 rounded-xl border border-emerald-500/40 shadow-xs transition-all relative active:scale-95"
+                    className="min-h-[38px] sm:min-h-[42px] inline-flex items-center gap-1.5 px-3 py-1.5 sm:px-3.5 sm:py-2 bg-emerald-950/70 hover:bg-emerald-900 text-xs font-bold text-emerald-100 rounded-xl border border-emerald-500/40 shadow-xs transition-all active:scale-95"
                   >
-                    <Sparkles className="w-4 h-4 text-amber-300" />
-                    <span>Fertilizer Schedule</span>
+                    <Sparkles className="w-3.5 h-3.5 text-amber-300 shrink-0" />
+                    <span>Fertilizer</span>
                     {overdueFertilizerCount > 0 && (
                       <span className="bg-amber-400 text-stone-950 text-[10px] font-black px-1.5 py-0.5 rounded-full">
                         {overdueFertilizerCount} overdue
@@ -516,31 +523,31 @@ export default function App() {
                   </button>
                   <button
                     onClick={() => handleOpenScanModal()}
-                    className="min-h-[44px] inline-flex items-center gap-2 px-4 py-2.5 bg-amber-400 hover:bg-amber-300 text-stone-950 text-xs font-bold rounded-xl shadow-xs transition-all active:scale-95"
+                    className="min-h-[38px] sm:min-h-[42px] inline-flex items-center gap-1.5 px-3.5 py-1.5 sm:px-4 sm:py-2 bg-amber-400 hover:bg-amber-300 text-stone-950 text-xs font-bold rounded-xl shadow-xs transition-all active:scale-95"
                   >
-                    <Camera className="w-4 h-4 text-stone-900" />
-                    <span>Scan Plant (AI)</span>
+                    <Camera className="w-3.5 h-3.5 text-stone-900 shrink-0" />
+                    <span>Scan Plant</span>
                   </button>
                   <button
                     onClick={() => setCurrentTab('reminders')}
-                    className="min-h-[44px] inline-flex items-center gap-2 px-3.5 py-2.5 bg-emerald-950/70 hover:bg-emerald-900 text-xs font-bold text-emerald-100 rounded-xl border border-emerald-500/40 shadow-xs transition-all active:scale-95"
+                    className="min-h-[38px] sm:min-h-[42px] inline-flex items-center gap-1.5 px-3 py-1.5 sm:px-3.5 sm:py-2 bg-emerald-950/70 hover:bg-emerald-900 text-xs font-bold text-emerald-100 rounded-xl border border-emerald-500/40 shadow-xs transition-all active:scale-95"
                   >
-                    <Calendar className="w-4 h-4 text-amber-300" />
-                    <span>{currentMonthName} Reminders</span>
+                    <Calendar className="w-3.5 h-3.5 text-amber-300 shrink-0" />
+                    <span>{currentMonthName}</span>
                   </button>
                   <button
                     onClick={() => setCurrentTab('home')}
-                    className="min-h-[44px] inline-flex items-center gap-1.5 px-3.5 py-2.5 bg-white/10 hover:bg-white/20 text-xs font-bold text-white rounded-xl shadow-xs transition-all border border-white/20 active:scale-95"
+                    className="min-h-[38px] sm:min-h-[42px] inline-flex items-center gap-1.5 px-3 py-1.5 sm:px-3.5 sm:py-2 bg-white/10 hover:bg-white/20 text-xs font-bold text-white rounded-xl shadow-xs transition-all border border-white/20 active:scale-95"
                   >
-                    <BookOpen className="w-4 h-4 text-emerald-300" />
-                    <span>Browse All 21 Plants</span>
+                    <BookOpen className="w-3.5 h-3.5 text-emerald-300 shrink-0" />
+                    <span>All Guide ({plants.length})</span>
                   </button>
                 </div>
               </div>
 
               {/* Decorative subtle botanical background illustration */}
-              <div className="absolute -right-8 -bottom-10 opacity-10 pointer-events-none text-emerald-100">
-                <svg className="w-64 h-64" viewBox="0 0 24 24" fill="currentColor">
+              <div className="absolute -right-6 -bottom-8 opacity-10 pointer-events-none text-emerald-100">
+                <svg className="w-44 h-44 sm:w-64 sm:h-64" viewBox="0 0 24 24" fill="currentColor">
                   <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z" />
                 </svg>
               </div>
@@ -564,7 +571,7 @@ export default function App() {
                     Your garden list is currently empty
                   </h3>
                   <p className="text-xs text-stone-500 leading-relaxed">
-                    You haven&apos;t marked any plants as owned yet. All 21 authentic Indian species remain fully browsable in the Reference Guide. Click &quot;Add to Garden&quot; on any plants you grow to track feeding and seasonal tasks!
+                    You haven&apos;t marked any plants as owned yet. All {plants.length} authentic Indian species remain fully browsable in the Reference Guide. Click &quot;Add to Garden&quot; on any plants you grow to track feeding and seasonal tasks!
                   </p>
                 </div>
                 <div className="pt-2 flex items-center justify-center gap-3">
@@ -573,7 +580,7 @@ export default function App() {
                     className="min-h-[44px] inline-flex items-center gap-2 px-5 py-2.5 text-xs sm:text-sm font-bold text-white bg-emerald-700 hover:bg-emerald-800 rounded-2xl shadow-md transition-all active:scale-95"
                   >
                     <BookOpen className="w-4 h-4 text-emerald-200" />
-                    <span>Browse 21 Reference Plants</span>
+                    <span>Browse {plants.length} Reference Plants</span>
                   </button>
                 </div>
               </div>
@@ -651,7 +658,7 @@ export default function App() {
                 <div className="p-4 bg-emerald-50/70 border border-emerald-200/80 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
                   <div className="flex items-center gap-2 text-emerald-950 font-semibold">
                     <BookOpen className="w-4 h-4 text-emerald-700 shrink-0" />
-                    <span>Want to add more plants? All 21 authentic Indian species are in the Reference Guide.</span>
+                    <span>Want to add more plants? All {plants.length} authentic Indian species are in the Reference Guide.</span>
                   </div>
                   <button
                     onClick={() => setCurrentTab('home')}
@@ -668,45 +675,47 @@ export default function App() {
         {/* VIEW 2: FULL REFERENCE GUIDE (All 21 Plants, Browsable at All Times) */}
         {currentTab === 'home' && (
           <div className="space-y-6">
-            {/* Reference Guide Header Banner */}
-            <div className="bg-gradient-to-br from-[#1c3e27] via-[#244b30] to-[#1a3824] text-stone-100 rounded-3xl p-6 sm:p-8 relative overflow-hidden shadow-md border border-emerald-700/40">
-              <div className="max-w-2xl relative z-10 space-y-2.5">
-                <div className="flex items-center gap-2 text-xs font-bold tracking-wider uppercase text-emerald-300">
-                  <BookOpen className="w-4 h-4 text-emerald-400" />
-                  <span>Indian Balcony & Terrace Reference Database</span>
-                </div>
-                <h1 className="text-2xl sm:text-4xl font-extrabold tracking-tight text-white drop-shadow-sm flex items-center gap-3">
-                  <span>Plant Reference Guide</span>
-                  <span className="text-sm sm:text-base font-bold bg-emerald-900/80 text-emerald-200 px-3 py-1 rounded-full border border-emerald-600/40">
+            {/* Reference Guide Header Banner - Sleek & Compact on Mobile */}
+            <div className="bg-gradient-to-br from-[#1c3e27] via-[#244b30] to-[#1a3824] text-stone-100 rounded-2xl sm:rounded-3xl p-3.5 sm:p-6 lg:p-7 relative overflow-hidden shadow-md border border-emerald-700/40">
+              <div className="max-w-2xl relative z-10 space-y-2 sm:space-y-2.5">
+                <div className="flex items-center justify-between gap-2">
+                  <div className="inline-flex items-center gap-1.5 text-[10px] sm:text-xs font-bold tracking-wider uppercase text-emerald-300">
+                    <BookOpen className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-emerald-400 shrink-0" />
+                    <span>Indian Balcony & Terrace Guide</span>
+                  </div>
+                  <span className="text-[11px] sm:text-xs font-bold bg-emerald-900/90 text-emerald-200 px-2.5 py-0.5 rounded-full border border-emerald-600/40 shrink-0">
                     {plants.length} species
                   </span>
+                </div>
+                <h1 className="text-xl sm:text-3xl font-extrabold tracking-tight text-white drop-shadow-sm">
+                  Plant Reference Guide
                 </h1>
-                <p className="text-xs sm:text-sm text-emerald-100/90 leading-relaxed max-w-xl">
-                  Comprehensive care instructions, sunlight requirements, potting mixes, and Indian kitchen remedies. Use the &quot;+ Add to Garden&quot; button on any plant you grow to track customized feeding schedules and seasonal tasks.
+                <p className="text-[11px] sm:text-xs text-emerald-100/90 leading-relaxed max-w-xl">
+                  Care instructions, sunlight needs, and Indian kitchen remedies. Tap &quot;+ Add to Garden&quot; to track feeding and seasonal alerts.
                 </p>
 
-                {/* Switcher & Action buttons - Generous touch targets */}
-                <div className="pt-2 flex flex-wrap items-center gap-2.5">
+                {/* Switcher & Action buttons */}
+                <div className="pt-1 flex flex-wrap items-center gap-1.5 sm:gap-2">
                   <button
                     onClick={() => setCurrentTab('my-garden')}
-                    className="min-h-[44px] inline-flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-xs font-bold text-white rounded-xl shadow-xs transition-all active:scale-95"
+                    className="min-h-[38px] sm:min-h-[42px] inline-flex items-center gap-1.5 px-3 py-1.5 sm:px-4 sm:py-2 bg-emerald-600 hover:bg-emerald-500 text-xs font-bold text-white rounded-xl shadow-xs transition-all active:scale-95"
                   >
-                    <Sprout className="w-4 h-4 text-emerald-200" />
-                    <span>View My Garden ({ownedPlants.length})</span>
+                    <Sprout className="w-3.5 h-3.5 text-emerald-200 shrink-0" />
+                    <span>My Garden ({ownedPlants.length})</span>
                   </button>
                   <button
                     onClick={() => handleOpenScanModal()}
-                    className="min-h-[44px] inline-flex items-center gap-2 px-4 py-2 bg-amber-400 hover:bg-amber-300 text-stone-950 text-xs font-bold rounded-xl shadow-xs transition-all active:scale-95"
+                    className="min-h-[38px] sm:min-h-[42px] inline-flex items-center gap-1.5 px-3 py-1.5 sm:px-4 sm:py-2 bg-amber-400 hover:bg-amber-300 text-stone-950 text-xs font-bold rounded-xl shadow-xs transition-all active:scale-95"
                   >
-                    <Camera className="w-4 h-4 text-stone-900" />
-                    <span>Scan Plant (AI)</span>
+                    <Camera className="w-3.5 h-3.5 text-stone-900 shrink-0" />
+                    <span>Scan Plant</span>
                   </button>
                   <button
                     onClick={handleOpenAddModal}
-                    className="min-h-[44px] inline-flex items-center gap-1.5 px-4 py-2 bg-emerald-800 hover:bg-emerald-700 text-xs font-bold text-white rounded-xl shadow-xs transition-all ml-auto border border-emerald-600/50 active:scale-95"
+                    className="min-h-[38px] sm:min-h-[42px] inline-flex items-center gap-1.5 px-3 py-1.5 sm:px-4 sm:py-2 bg-emerald-800 hover:bg-emerald-700 text-xs font-bold text-white rounded-xl shadow-xs transition-all ml-auto border border-emerald-600/50 active:scale-95"
                   >
-                    <Plus className="w-4 h-4 stroke-[2.5]" />
-                    <span>Add Custom Plant</span>
+                    <Plus className="w-3.5 h-3.5 stroke-[2.5]" />
+                    <span>Add Plant</span>
                   </button>
                 </div>
               </div>

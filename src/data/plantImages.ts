@@ -188,4 +188,11 @@ export const VERIFIED_PLANT_IMAGES: Record<string, VerifiedPlantImageMeta> = {
       'https://thumb.wikimedia.org/wikipedia/commons/thumb/6/68/Starr-080531-4835-Chlorophytum_comosum-in_pot-Bravo_barracks_Sand_Island-Midway_Atoll_%2824817471221%29.jpg/960px-Starr-080531-4835-Chlorophytum_comosum-in_pot-Bravo_barracks_Sand_Island-Midway_Atoll_%2824817471221%29.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail',
     attributionNote: 'Wikimedia Commons · Chlorophytum comosum (Spider Plant)',
   },
+  sadabahar: {
+    matchedFile: 'File:Catharanthus roseus (Pink Madagascar Periwinkle).jpg',
+    botanicalSpecies: 'Catharanthus roseus',
+    source: 'Wikimedia Commons',
+    imageUrl: '/images/sadabahar.jpg',
+    attributionNote: 'Catharanthus roseus (Sadabahar / Madagascar Periwinkle)',
+  },
 };

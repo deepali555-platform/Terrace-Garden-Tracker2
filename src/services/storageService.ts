@@ -118,6 +118,32 @@ export const storageService = {
         }
       }
 
+      if (!parsed.some((p) => p.id === 'sadabahar')) {
+        const sadabaharPlant = INITIAL_PLANTS.find((p) => p.id === 'sadabahar');
+        if (sadabaharPlant) {
+          const d = new Date();
+          d.setDate(d.getDate() - 8);
+          const enrichedSadabahar: Plant = {
+            ...sadabaharPlant,
+            inMyGarden: true,
+            imageUrl: '/images/sadabahar.jpg',
+            lastFertilizedDate: toISODateString(d),
+          };
+          parsed.push(enrichedSadabahar);
+          modified = true;
+        }
+      }
+
+      // If user has any custom plant named Sadabahar, update its image too
+      parsed.forEach((p) => {
+        if (p.name.toLowerCase().includes('sadabahar') || p.botanicalName?.toLowerCase().includes('catharanthus')) {
+          if (!p.imageUrl || p.imageUrl.includes('placeholder') || p.imageUrl === '/images/sadabahar.jpg') {
+            p.imageUrl = '/images/sadabahar.jpg';
+            modified = true;
+          }
+        }
+      });
+
       if (modified) {
         this.savePlants(parsed);
       }

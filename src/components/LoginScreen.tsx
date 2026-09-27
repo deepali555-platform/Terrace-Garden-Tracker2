@@ -238,7 +238,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onContinueAsGuest }) =
               className="w-full min-h-[44px] py-2.5 px-4 rounded-xl text-stone-600 hover:text-stone-900 hover:bg-stone-100 text-xs font-semibold transition-all flex items-center justify-center gap-1.5"
             >
               <Sparkles className="w-3.5 h-3.5 text-amber-600" />
-              <span>Browse 21 Reference Plants without signing in</span>
+              <span>Browse Indian Reference Plants without signing in</span>
             </button>
           </div>
 

@@ -16,6 +16,9 @@ const PORT = Number(process.env.PORT) || 3000;
 // Increase payload limit for image data URLs
 app.use(express.json({ limit: '25mb' }));
 
+// Serve static assets from public folder
+app.use(express.static(path.resolve(__dirname, 'public')));
+
 // Initialize Google GenAI with recommended server-side settings
 const apiKey = process.env.GEMINI_API_KEY;
 const ai = new GoogleGenAI({

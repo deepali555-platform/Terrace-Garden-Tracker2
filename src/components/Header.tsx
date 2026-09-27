@@ -1,10 +1,11 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Plus, Leaf, Calendar, Stethoscope, RefreshCw, Sprout, Sparkles, Camera, LogOut, User as UserIcon, ShieldCheck } from 'lucide-react';
+import { Plus, Leaf, Calendar, Stethoscope, RefreshCw, Sprout, Sparkles, Camera, LogOut, User as UserIcon, ShieldCheck, LogIn } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
+import { isUserAdmin } from '../config/adminConfig';
 
 interface HeaderProps {
-  currentTab: 'home' | 'my-garden' | 'reminders' | 'diagnosis' | 'fertilizer';
-  onSelectTab: (tab: 'home' | 'my-garden' | 'reminders' | 'diagnosis' | 'fertilizer') => void;
+  currentTab: 'home' | 'my-garden' | 'reminders' | 'diagnosis' | 'fertilizer' | 'admin';
+  onSelectTab: (tab: 'home' | 'my-garden' | 'reminders' | 'diagnosis' | 'fertilizer' | 'admin') => void;
   onOpenAddModal: () => void;
   onOpenScanModal?: () => void;
   onOpenLoginModal?: () => void;
@@ -28,6 +29,8 @@ export const Header: React.FC<HeaderProps> = ({
   const { user, signOut, isGuest } = useAuth();
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
   const profileMenuRef = useRef<HTMLDivElement>(null);
+
+  const isAdmin = Boolean(user?.email && isUserAdmin(user.email));
 
   // Close profile dropdown when clicking outside
   useEffect(() => {
@@ -156,6 +159,22 @@ export const Header: React.FC<HeaderProps> = ({
             <Stethoscope className="w-4 h-4 text-teal-300" />
             <span>Disease Clinic</span>
           </button>
+
+          {/* Tab 6: Admin Portal (Accessible exclusively to app owner) */}
+          {isAdmin && (
+            <button
+              onClick={() => onSelectTab('admin')}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full transition-all cursor-pointer ${
+                currentTab === 'admin'
+                  ? 'bg-amber-400 text-stone-950 shadow-xs border border-amber-300 font-bold'
+                  : 'text-amber-200 hover:text-white hover:bg-emerald-900/50'
+              }`}
+              title="Admin Portal: Review & moderate user-submitted plants"
+            >
+              <ShieldCheck className="w-4 h-4 text-amber-300" />
+              <span>Admin</span>
+            </button>
+          )}
         </nav>
 
         {/* Zone 3: Primary Action buttons */}
@@ -209,11 +228,12 @@ export const Header: React.FC<HeaderProps> = ({
               <button
                 type="button"
                 onClick={onOpenLoginModal}
-                className="flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-bold text-emerald-100 hover:text-white bg-emerald-950/70 hover:bg-emerald-900 border border-emerald-700/60 rounded-xl transition-all min-h-[44px] active:scale-95"
-                title="Sign in with Google"
+                className="flex items-center justify-center gap-1.5 px-3 py-1.5 sm:px-3.5 sm:py-2 text-xs font-bold text-white bg-emerald-700 hover:bg-emerald-600 border border-emerald-500/70 rounded-xl transition-all min-h-[40px] active:scale-95 shadow-sm cursor-pointer"
+                title="Log in with Google"
+                aria-label="Log in to account"
               >
-                <UserIcon className="w-4 h-4 text-emerald-300" />
-                <span className="hidden sm:inline">Sign In</span>
+                <LogIn className="w-4 h-4 text-emerald-200" />
+                <span className="font-bold">Log in</span>
               </button>
             )}
 
@@ -261,6 +281,21 @@ export const Header: React.FC<HeaderProps> = ({
                     </div>
                   )}
                 </div>
+
+                {/* Admin Portal Shortcut (Owner only) */}
+                {isAdmin && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsProfileMenuOpen(false);
+                      onSelectTab('admin');
+                    }}
+                    className="w-full min-h-[40px] px-3 py-2 rounded-xl text-xs font-bold text-amber-900 bg-amber-50 hover:bg-amber-100 border border-amber-300/80 transition-colors flex items-center justify-center gap-1.5 cursor-pointer active:scale-95"
+                  >
+                    <ShieldCheck className="w-4 h-4 text-amber-700" />
+                    <span>Admin Moderation Portal</span>
+                  </button>
+                )}
 
                 {/* Sign Out Action Button */}
                 <button

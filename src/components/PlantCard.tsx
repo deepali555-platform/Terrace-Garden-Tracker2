@@ -11,6 +11,7 @@ interface PlantCardProps {
   onSelect: (plant: Plant) => void;
   onToggleFavorite: (id: string, e: React.MouseEvent) => void;
   onToggleGarden?: (id: string, e: React.MouseEvent) => void;
+  isHighlighted?: boolean;
 }
 
 export const PlantCard: React.FC<PlantCardProps> = ({
@@ -19,6 +20,7 @@ export const PlantCard: React.FC<PlantCardProps> = ({
   onSelect,
   onToggleFavorite,
   onToggleGarden,
+  isHighlighted = false,
 }) => {
   const isBloomingNow = isPlantBloomingMonth(plant, currentMonthIndex);
   const accent = getPlantCategoryAccent(plant.category);
@@ -27,6 +29,7 @@ export const PlantCard: React.FC<PlantCardProps> = ({
 
   return (
     <div
+      id={`plant-card-${plant.id}`}
       onClick={() => onSelect(plant)}
       role="button"
       tabIndex={0}
@@ -37,13 +40,23 @@ export const PlantCard: React.FC<PlantCardProps> = ({
         }
       }}
       className={`group text-left rounded-2xl sm:rounded-3xl border transition-all duration-300 hover:-translate-y-1 hover:shadow-lg active:scale-[0.98] cursor-pointer flex flex-col justify-between relative overflow-hidden p-2.5 sm:p-4 ${
-        isOwned
+        isHighlighted
+          ? 'ring-2 ring-emerald-600 ring-offset-2 bg-emerald-50/20 border-emerald-600 shadow-md scale-[1.01]'
+          : isOwned
           ? isOwned && fertilizerStatus.isOverdue
             ? 'bg-gradient-to-b from-amber-50/30 via-white to-white border-amber-400 ring-1 ring-amber-400/30 shadow-xs hover:border-amber-500'
             : 'bg-gradient-to-b from-emerald-50/25 via-white to-white border-emerald-500/70 ring-1 ring-emerald-500/20 shadow-xs hover:border-emerald-600'
           : 'bg-white border-stone-200/90 hover:border-stone-400 shadow-2xs'
       }`}
     >
+      {/* Top Match Badge if highlighted */}
+      {isHighlighted && (
+        <div className="absolute top-2 right-2 z-20 pointer-events-none">
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-black bg-emerald-700 text-white shadow-sm animate-pulse">
+            ★ Top Match
+          </span>
+        </div>
+      )}
       {/* ============================================================ */}
       {/* 1. MOBILE VIEW (< sm): Clean, evenly sized 2-column card     */}
       {/* ============================================================ */}

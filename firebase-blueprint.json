@@ -44,6 +44,40 @@
         "updatedAt": { "type": "string", "description": "Updated ISO timestamp" }
       },
       "required": ["id", "userId", "name", "category"]
+    },
+    "UserSubmittedPlant": {
+      "title": "UserSubmittedPlant",
+      "description": "Plant submitted by a user for review into the shared catalog",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Submission ID" },
+        "originalPlantId": { "type": "string", "description": "Original custom plant ID" },
+        "userId": { "type": "string", "description": "Submitting user ID" },
+        "userEmail": { "type": "string", "description": "Submitting user email" },
+        "userDisplayName": { "type": "string", "description": "Submitting user display name" },
+        "plantName": { "type": "string", "description": "Plant common name" },
+        "botanicalName": { "type": "string", "description": "Botanical name" },
+        "category": { "type": "string", "description": "Plant category" },
+        "status": { "type": "string", "enum": ["pending", "approved", "dismissed"], "description": "Review status" },
+        "submittedAt": { "type": "string", "description": "Submission ISO date" },
+        "reviewedAt": { "type": "string", "description": "Review ISO date" }
+      },
+      "required": ["id", "userId", "plantName", "category", "status", "submittedAt"]
+    },
+    "SharedCatalogPlant": {
+      "title": "SharedCatalogPlant",
+      "description": "Community plant approved by admin into the global reference catalog",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Shared plant ID" },
+        "name": { "type": "string", "description": "Common plant name" },
+        "category": { "type": "string", "description": "Plant category" },
+        "addedByUserId": { "type": "string", "description": "Original creator user ID" },
+        "addedByUserEmail": { "type": "string", "description": "Original creator email" },
+        "approvedAt": { "type": "string", "description": "Admin approval ISO timestamp" },
+        "isSharedCatalog": { "type": "boolean", "description": "True for shared catalog plants" }
+      },
+      "required": ["id", "name", "category", "approvedAt", "isSharedCatalog"]
     }
   },
   "firestore": {
@@ -58,6 +92,14 @@
     "/users/{userId}/customPlants/{plantId}": {
       "schema": "CustomPlant",
       "description": "Custom plants created by the user via Add Plant form"
+    },
+    "/userSubmittedPlants/{submissionId}": {
+      "schema": "UserSubmittedPlant",
+      "description": "Log of all custom plants submitted by users for admin moderation"
+    },
+    "/sharedPlants/{plantId}": {
+      "schema": "SharedCatalogPlant",
+      "description": "Global community plants approved into the shared reference catalog"
     }
   }
 }

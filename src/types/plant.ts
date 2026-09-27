@@ -158,6 +158,13 @@ export interface Plant {
   scanHistory?: HealthScanRecord[];
   createdAt?: string;
   updatedAt?: string;
+
+  // Shared catalog metadata (for plants approved by admin into global catalog)
+  isSharedCatalog?: boolean;
+  addedByUserId?: string;
+  addedByUserEmail?: string;
+  addedByUserName?: string;
+  approvedAt?: string;
 }
 
 export interface SymptomDefinition {

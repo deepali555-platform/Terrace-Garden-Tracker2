@@ -17,6 +17,8 @@ import { FertilizerScheduleView } from './components/FertilizerScheduleView';
 import { PlantHealthScannerModal } from './components/PlantHealthScannerModal';
 import { GardenFilters } from './components/GardenFilters';
 import { GardenStatsBar } from './components/GardenStatsBar';
+import { AdminView } from './components/AdminView';
+import { isUserAdmin } from './config/adminConfig';
 import {
   Sprout,
   Plus,
@@ -42,8 +44,69 @@ export default function App() {
   const [isLoadingPlants, setIsLoadingPlants] = useState(true);
 
   const [plants, setPlants] = useState<Plant[]>([]);
-  const [currentTab, setCurrentTab] = useState<'my-garden' | 'home' | 'reminders' | 'diagnosis' | 'fertilizer'>('my-garden');
+  const [currentTab, setCurrentTab] = useState<'my-garden' | 'home' | 'reminders' | 'diagnosis' | 'fertilizer' | 'admin'>('home');
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+
+  // Pending action & contextual auth prompt state
+  const [pendingAction, setPendingAction] = useState<(() => void | Promise<void>) | null>(null);
+  const [authPromptReason, setAuthPromptReason] = useState<string | null>(null);
+
+  const requireAuth = (action: () => void | Promise<void>, reason: string) => {
+    if (user) {
+      action();
+    } else {
+      setPendingAction(() => action);
+      setAuthPromptReason(reason);
+      setShowLoginModal(true);
+    }
+  };
+
+  // Run pending action once user completes login
+  useEffect(() => {
+    if (user && pendingAction) {
+      const act = pendingAction;
+      setPendingAction(null);
+      setShowLoginModal(false);
+      setAuthPromptReason(null);
+      act();
+    }
+  }, [user, pendingAction]);
+
+  const handleSelectTab = (tab: 'my-garden' | 'home' | 'reminders' | 'diagnosis' | 'fertilizer' | 'admin') => {
+    if (tab === 'home') {
+      setCurrentTab('home');
+      return;
+    }
+
+    if (tab === 'admin') {
+      if (user && isUserAdmin(user.email)) {
+        setCurrentTab('admin');
+        return;
+      }
+      if (!user) {
+        requireAuth(() => {
+          setCurrentTab('admin');
+        }, 'Sign in with your administrator account to access the Admin Portal.');
+        return;
+      }
+      showToast('Access restricted: your account is not an authorized administrator.');
+      return;
+    }
+
+    const tabDescriptions: Record<string, string> = {
+      'my-garden': 'My Garden',
+      'fertilizer': 'Fertilizer Schedule',
+      'reminders': 'Seasonal Reminders',
+      'diagnosis': 'AI Health Scanner',
+    };
+
+    requireAuth(() => {
+      setCurrentTab(tab);
+      if (tab !== 'diagnosis') {
+        setPreselectedDiagnosisPlantId(null);
+      }
+    }, `Sign in with Google to view and manage your ${tabDescriptions[tab] || 'private garden'}.`);
+  };
 
   // Search & Filters state for Reference Guide
   const [searchQuery, setSearchQuery] = useState('');
@@ -66,6 +129,9 @@ export default function App() {
   const [scanModalPlant, setScanModalPlant] = useState<Plant | null>(null);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const resultsGridRef = useRef<HTMLDivElement>(null);
+  const gardenResultsGridRef = useRef<HTMLDivElement>(null);
+  const [highlightedPlantId, setHighlightedPlantId] = useState<string | null>(null);
 
   // Current Month index (1 to 12)
   const currentMonthIndex = useMemo(() => {
@@ -88,10 +154,13 @@ export default function App() {
           setIsLoadingPlants(false);
         }
       } else {
-        // Guest or unauthenticated: Load local/shared reference plants
+        // Guest or unauthenticated: Load local + admin-approved community shared plants
         const local = storageService.getPlants();
+        const shared = await firestoreStorageService.getSharedPlants();
+        const localIds = new Set(local.map((p) => p.id));
+        const merged = [...local, ...shared.filter((sp) => !localIds.has(sp.id))];
         if (!isCancelled) {
-          setPlants(local);
+          setPlants(merged);
           setIsLoadingPlants(false);
         }
       }
@@ -125,13 +194,17 @@ export default function App() {
 
   // Add / Edit Plant handlers
   const handleOpenAddModal = () => {
-    setPlantToEdit(null);
-    setIsFormModalOpen(true);
+    requireAuth(() => {
+      setPlantToEdit(null);
+      setIsFormModalOpen(true);
+    }, 'Sign in with Google to add custom plant varieties to your private garden.');
   };
 
   const handleOpenEditModal = (plant: Plant) => {
-    setPlantToEdit(plant);
-    setIsFormModalOpen(true);
+    requireAuth(() => {
+      setPlantToEdit(plant);
+      setIsFormModalOpen(true);
+    }, `Sign in with Google to edit care details for ${plant.name}.`);
   };
 
   const handleSavePlant = async (savedPlant: Omit<Plant, 'id' | 'createdAt' | 'updatedAt'> | Plant) => {
@@ -149,7 +222,10 @@ export default function App() {
     } else {
       // Add new
       if (user) {
-        const created = await firestoreStorageService.addCustomPlant(user.uid, savedPlant);
+        const created = await firestoreStorageService.addCustomPlant(
+          { uid: user.uid, email: user.email, displayName: user.displayName },
+          savedPlant
+        );
         setPlants((prev) => [created, ...prev]);
         showToast(`Added ${created.name} to your garden!`);
       } else {
@@ -177,61 +253,70 @@ export default function App() {
   };
 
   // Toggle Favorite
-  const handleToggleFavorite = async (id: string, e: React.MouseEvent) => {
+  const handleToggleFavorite = (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    const updated = storageService.toggleFavorite(id);
-    if (updated) {
-      setPlants((prev) => prev.map((p) => (p.id === id ? { ...p, isFavorite: updated.isFavorite } : p)));
-      if (selectedPlantForDetail?.id === id) {
-        setSelectedPlantForDetail({ ...selectedPlantForDetail, isFavorite: updated.isFavorite });
-      }
-      if (user) {
-        const full = plants.find((p) => p.id === id);
-        if (full) {
-          await firestoreStorageService.syncUserPlantState(user.uid, { ...full, isFavorite: updated.isFavorite });
+    const target = plants.find((p) => p.id === id);
+    requireAuth(async () => {
+      const updated = storageService.toggleFavorite(id);
+      if (updated) {
+        setPlants((prev) => prev.map((p) => (p.id === id ? { ...p, isFavorite: updated.isFavorite } : p)));
+        if (selectedPlantForDetail?.id === id) {
+          setSelectedPlantForDetail({ ...selectedPlantForDetail, isFavorite: updated.isFavorite });
+        }
+        if (user) {
+          const full = plants.find((p) => p.id === id);
+          if (full) {
+            await firestoreStorageService.syncUserPlantState(user.uid, { ...full, isFavorite: updated.isFavorite });
+          }
         }
       }
-    }
+    }, `Sign in with Google to save ${target?.name || 'this plant'} to your favorites.`);
   };
 
   // Toggle "In My Garden"
-  const handleToggleInMyGarden = async (id: string, e?: React.MouseEvent) => {
+  const handleToggleInMyGarden = (id: string, e?: React.MouseEvent) => {
     if (e) {
       e.stopPropagation();
     }
-    const updated = storageService.toggleInMyGarden(id);
-    if (updated) {
-      setPlants((prev) => prev.map((p) => (p.id === id ? { ...p, inMyGarden: updated.inMyGarden } : p)));
-      if (selectedPlantForDetail?.id === id) {
-        setSelectedPlantForDetail({ ...selectedPlantForDetail, inMyGarden: updated.inMyGarden });
-      }
-      if (user) {
-        const full = plants.find((p) => p.id === id);
-        if (full) {
-          await firestoreStorageService.syncUserPlantState(user.uid, { ...full, inMyGarden: updated.inMyGarden });
+    const target = plants.find((p) => p.id === id);
+    requireAuth(async () => {
+      const updated = storageService.toggleInMyGarden(id);
+      if (updated) {
+        setPlants((prev) => prev.map((p) => (p.id === id ? { ...p, inMyGarden: updated.inMyGarden } : p)));
+        if (selectedPlantForDetail?.id === id) {
+          setSelectedPlantForDetail({ ...selectedPlantForDetail, inMyGarden: updated.inMyGarden });
         }
+        if (user) {
+          const full = plants.find((p) => p.id === id);
+          if (full) {
+            await firestoreStorageService.syncUserPlantState(user.uid, { ...full, inMyGarden: updated.inMyGarden });
+          }
+        }
+        showToast(
+          updated.inMyGarden
+            ? `Added ${updated.name} to My Garden!`
+            : `Removed ${updated.name} from My Garden`
+        );
       }
-      showToast(
-        updated.inMyGarden
-          ? `Added ${updated.name} to My Garden!`
-          : `Removed ${updated.name} from My Garden (feed & scan history saved)`
-      );
-    }
+    }, `Sign in with Google to add ${target?.name || 'this plant'} to your garden and track care schedules.`);
   };
 
   // Update Plant Photo (upload or reset)
-  const handleUpdatePlantPhoto = async (plantId: string, photoDataUrl: string | null) => {
-    const updated = storageService.updatePlantPhoto(plantId, photoDataUrl);
-    if (updated) {
-      setPlants((prev) => prev.map((p) => (p.id === plantId ? updated : p)));
-      if (selectedPlantForDetail?.id === plantId) {
-        setSelectedPlantForDetail(updated);
+  const handleUpdatePlantPhoto = (plantId: string, photoDataUrl: string | null) => {
+    const target = plants.find((p) => p.id === plantId);
+    requireAuth(async () => {
+      const updated = storageService.updatePlantPhoto(plantId, photoDataUrl);
+      if (updated) {
+        setPlants((prev) => prev.map((p) => (p.id === plantId ? updated : p)));
+        if (selectedPlantForDetail?.id === plantId) {
+          setSelectedPlantForDetail(updated);
+        }
+        if (user) {
+          await firestoreStorageService.syncUserPlantState(user.uid, updated);
+        }
+        showToast(photoDataUrl ? `Updated photo for ${updated.name}!` : `Reset photo to default for ${updated.name}`);
       }
-      if (user) {
-        await firestoreStorageService.syncUserPlantState(user.uid, updated);
-      }
-      showToast(photoDataUrl ? `Updated photo for ${updated.name}!` : `Reset photo to default for ${updated.name}`);
-    }
+    }, `Sign in with Google to customize photos for ${target?.name || 'this plant'}.`);
   };
 
   // Reset to default Indian seed plants
@@ -277,8 +362,10 @@ export default function App() {
 
   // Open Plant Health Scanner Modal
   const handleOpenScanModal = (plant?: Plant) => {
-    setScanModalPlant(plant || null);
-    setIsScanModalOpen(true);
+    requireAuth(() => {
+      setScanModalPlant(plant || null);
+      setIsScanModalOpen(true);
+    }, 'Sign in with Google to diagnose plant diseases and save scan histories to your account.');
   };
 
   // Save Scan Record to Plant History
@@ -312,57 +399,103 @@ export default function App() {
   };
 
   // Record Fertilization
-  const handleMarkFertilized = async (plantId: string, dateStr?: string) => {
-    const updated = storageService.recordFertilization(plantId, dateStr);
-    if (updated) {
-      setPlants((prev) => prev.map((p) => (p.id === plantId ? updated : p)));
-      if (selectedPlantForDetail?.id === plantId) {
-        setSelectedPlantForDetail(updated);
+  const handleMarkFertilized = (plantId: string, dateStr?: string) => {
+    const target = plants.find((p) => p.id === plantId);
+    requireAuth(async () => {
+      const updated = storageService.recordFertilization(plantId, dateStr);
+      if (updated) {
+        setPlants((prev) => prev.map((p) => (p.id === plantId ? updated : p)));
+        if (selectedPlantForDetail?.id === plantId) {
+          setSelectedPlantForDetail(updated);
+        }
+        if (user) {
+          await firestoreStorageService.syncUserPlantState(user.uid, updated);
+        }
+        showToast(`Logged fertilization for ${updated.name}! Next due date recalculated.`);
       }
-      if (user) {
-        await firestoreStorageService.syncUserPlantState(user.uid, updated);
-      }
-      showToast(`Logged fertilization for ${updated.name}! Next due date recalculated.`);
-    }
+    }, `Sign in with Google to log fertilization for ${target?.name || 'this plant'}.`);
   };
 
   // Navigate to Diagnosis with a specific plant
   const handleDiagnosePlant = (plantId: string) => {
-    setPreselectedDiagnosisPlantId(plantId);
-    setCurrentTab('diagnosis');
+    requireAuth(() => {
+      setPreselectedDiagnosisPlantId(plantId);
+      setCurrentTab('diagnosis');
+    }, 'Sign in with Google to diagnose plant issues and save scan histories.');
+  };
+
+  // Helper function to rank search relevance: exact matches > startsWith > word matches > contains
+  const getSearchRelevanceScore = (plant: Plant, rawQuery: string): number => {
+    const q = rawQuery.toLowerCase().trim();
+    if (!q) return 0;
+
+    const name = plant.name.toLowerCase();
+    const botanical = (plant.botanicalName || '').toLowerCase();
+    const hindi = (plant.hindiName || '').toLowerCase();
+    const category = plant.category.toLowerCase();
+
+    // 1. Exact matches (Highest Priority)
+    if (name === q) return 100;
+    if (hindi === q) return 95;
+
+    // 2. Starts with query
+    if (name.startsWith(q)) return 85;
+    if (hindi.startsWith(q)) return 80;
+
+    // 3. Word inside name starts with query (e.g. "Rose" in "Indian Rose", "Tulsi" in "Holy Basil (Tulsi)")
+    const nameWords = name.split(/[\s,()/-]+/);
+    if (nameWords.some((w) => w.startsWith(q))) return 75;
+
+    const hindiWords = hindi.split(/[\s,()/-]+/);
+    if (hindiWords.some((w) => w.startsWith(q))) return 70;
+
+    // 4. Substring in name or Hindi
+    if (name.includes(q)) return 60;
+    if (hindi.includes(q)) return 55;
+
+    // 5. Botanical name matches
+    if (botanical.startsWith(q)) return 50;
+    if (botanical.includes(q)) return 40;
+
+    // 6. Category matches
+    if (category === q) return 35;
+    if (category.includes(q)) return 25;
+
+    return 0;
   };
 
   // Filtered plants for My Garden Tab
   const filteredGardenPlants = useMemo(() => {
-    return ownedPlants.filter((plant) => {
-      if (gardenSearchQuery.trim() !== '') {
-        const query = gardenSearchQuery.toLowerCase().trim();
-        const matchesName = plant.name.toLowerCase().includes(query);
-        const matchesBotanical = plant.botanicalName?.toLowerCase().includes(query);
-        const matchesHindi = plant.hindiName?.toLowerCase().includes(query);
-        const matchesCategory = plant.category.toLowerCase().includes(query);
-        if (!matchesName && !matchesBotanical && !matchesHindi && !matchesCategory) {
-          return false;
-        }
+    const q = gardenSearchQuery.trim();
+    const matches = ownedPlants.filter((plant) => {
+      if (q !== '') {
+        const score = getSearchRelevanceScore(plant, q);
+        if (score === 0) return false;
       }
       if (gardenSelectedCategory !== 'all' && plant.category !== gardenSelectedCategory) {
         return false;
       }
       return true;
     });
+
+    if (q !== '') {
+      return [...matches].sort((a, b) => {
+        return getSearchRelevanceScore(b, q) - getSearchRelevanceScore(a, q);
+      });
+    }
+
+    return matches;
   }, [ownedPlants, gardenSearchQuery, gardenSelectedCategory]);
 
-  // Filter plants for Reference Guide Screen
+  // Filter plants for Reference Guide Screen (Ranked with Exact Matches First)
   const filteredReferencePlants = useMemo(() => {
-    return plants.filter((plant) => {
+    const q = searchQuery.trim();
+
+    const matches = plants.filter((plant) => {
       // 1. Search text match
-      if (searchQuery.trim() !== '') {
-        const query = searchQuery.toLowerCase().trim();
-        const matchesName = plant.name.toLowerCase().includes(query);
-        const matchesBotanical = plant.botanicalName?.toLowerCase().includes(query);
-        const matchesHindi = plant.hindiName?.toLowerCase().includes(query);
-        const matchesCategory = plant.category.toLowerCase().includes(query);
-        if (!matchesName && !matchesBotanical && !matchesHindi && !matchesCategory) {
+      if (q !== '') {
+        const score = getSearchRelevanceScore(plant, q);
+        if (score === 0) {
           return false;
         }
       }
@@ -391,6 +524,15 @@ export default function App() {
 
       return true;
     });
+
+    // If search query is active, sort by relevance score so best match is at the very top
+    if (q !== '') {
+      return [...matches].sort((a, b) => {
+        return getSearchRelevanceScore(b, q) - getSearchRelevanceScore(a, q);
+      });
+    }
+
+    return matches;
   }, [
     plants,
     searchQuery,
@@ -400,6 +542,69 @@ export default function App() {
     onlyBloomingNow,
     currentMonthIndex,
   ]);
+
+  // Auto-scroll effect for Reference Guide Search
+  useEffect(() => {
+    const q = searchQuery.trim();
+    if (!q) {
+      setHighlightedPlantId(null);
+      return;
+    }
+
+    const timer = setTimeout(() => {
+      if (filteredReferencePlants.length === 0) {
+        setHighlightedPlantId(null);
+        return;
+      }
+
+      const topMatch = filteredReferencePlants[0];
+      const topScore = getSearchRelevanceScore(topMatch, q);
+      const isStrongOrSingleMatch = filteredReferencePlants.length === 1 || topScore >= 75;
+
+      if (isStrongOrSingleMatch) {
+        setHighlightedPlantId(topMatch.id);
+        const cardEl = document.getElementById(`plant-card-${topMatch.id}`);
+        if (cardEl) {
+          cardEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+      } else {
+        setHighlightedPlantId(null);
+        if (resultsGridRef.current) {
+          resultsGridRef.current.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+      }
+    }, 220);
+
+    return () => clearTimeout(timer);
+  }, [searchQuery, filteredReferencePlants]);
+
+  // Auto-scroll effect for My Garden Search
+  useEffect(() => {
+    const q = gardenSearchQuery.trim();
+    if (!q) {
+      return;
+    }
+
+    const timer = setTimeout(() => {
+      if (filteredGardenPlants.length === 0) return;
+
+      const topMatch = filteredGardenPlants[0];
+      const topScore = getSearchRelevanceScore(topMatch, q);
+      const isStrongOrSingleMatch = filteredGardenPlants.length === 1 || topScore >= 75;
+
+      if (isStrongOrSingleMatch) {
+        setHighlightedPlantId(topMatch.id);
+        const cardEl = document.getElementById(`plant-card-${topMatch.id}`);
+        if (cardEl) {
+          cardEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+      } else if (gardenResultsGridRef.current) {
+        gardenResultsGridRef.current.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      }
+    }, 220);
+
+    return () => clearTimeout(timer);
+  }, [gardenSearchQuery, filteredGardenPlants]);
 
   const handleClearAllFilters = () => {
     setSearchQuery('');
@@ -420,25 +625,18 @@ export default function App() {
     );
   }
 
-  // Show login screen on initial open if user is not signed in and not yet in guest mode
-  if (!user && !isGuest) {
-    return <LoginScreen onContinueAsGuest={() => {}} />;
-  }
-
   return (
     <div className="min-h-screen bg-[#f7f4ea] text-stone-900 flex flex-col pb-36 lg:pb-16 overflow-x-hidden w-full">
       {/* 3-Zone Header */}
       <Header
         currentTab={currentTab}
-        onSelectTab={(tab) => {
-          setCurrentTab(tab);
-          if (tab !== 'diagnosis') {
-            setPreselectedDiagnosisPlantId(null);
-          }
-        }}
+        onSelectTab={handleSelectTab}
         onOpenAddModal={handleOpenAddModal}
         onOpenScanModal={() => handleOpenScanModal()}
-        onOpenLoginModal={() => setShowLoginModal(true)}
+        onOpenLoginModal={() => {
+          setAuthPromptReason(null);
+          setShowLoginModal(true);
+        }}
         overdueFertilizerCount={overdueFertilizerCount}
         gardenPlantCount={ownedPlants.length}
         totalPlantCount={plants.length}
@@ -510,7 +708,7 @@ export default function App() {
                 {/* Quick Shortcuts - Clean, non-cluttering responsive row */}
                 <div className="pt-1 flex flex-wrap items-center gap-1.5 sm:gap-2">
                   <button
-                    onClick={() => setCurrentTab('fertilizer')}
+                    onClick={() => handleSelectTab('fertilizer')}
                     className="min-h-[38px] sm:min-h-[42px] inline-flex items-center gap-1.5 px-3 py-1.5 sm:px-3.5 sm:py-2 bg-emerald-950/70 hover:bg-emerald-900 text-xs font-bold text-emerald-100 rounded-xl border border-emerald-500/40 shadow-xs transition-all active:scale-95"
                   >
                     <Sparkles className="w-3.5 h-3.5 text-amber-300 shrink-0" />
@@ -529,14 +727,14 @@ export default function App() {
                     <span>Scan Plant</span>
                   </button>
                   <button
-                    onClick={() => setCurrentTab('reminders')}
+                    onClick={() => handleSelectTab('reminders')}
                     className="min-h-[38px] sm:min-h-[42px] inline-flex items-center gap-1.5 px-3 py-1.5 sm:px-3.5 sm:py-2 bg-emerald-950/70 hover:bg-emerald-900 text-xs font-bold text-emerald-100 rounded-xl border border-emerald-500/40 shadow-xs transition-all active:scale-95"
                   >
                     <Calendar className="w-3.5 h-3.5 text-amber-300 shrink-0" />
                     <span>{currentMonthName}</span>
                   </button>
                   <button
-                    onClick={() => setCurrentTab('home')}
+                    onClick={() => handleSelectTab('home')}
                     className="min-h-[38px] sm:min-h-[42px] inline-flex items-center gap-1.5 px-3 py-1.5 sm:px-3.5 sm:py-2 bg-white/10 hover:bg-white/20 text-xs font-bold text-white rounded-xl shadow-xs transition-all border border-white/20 active:scale-95"
                   >
                     <BookOpen className="w-3.5 h-3.5 text-emerald-300 shrink-0" />
@@ -626,33 +824,59 @@ export default function App() {
                 </div>
 
                 {/* Grid of Owned Plant Cards */}
-                {filteredGardenPlants.length === 0 ? (
-                  <div className="bg-white rounded-3xl border border-stone-200 p-8 text-center space-y-2">
-                    <p className="text-xs font-semibold text-stone-600">No garden plants match your search</p>
-                    <button
-                      onClick={() => {
-                        setGardenSearchQuery('');
-                        setGardenSelectedCategory('all');
-                      }}
-                      className="min-h-[44px] inline-flex items-center px-4 text-xs text-emerald-800 underline font-bold"
-                    >
-                      Clear search
-                    </button>
-                  </div>
-                ) : (
-                  <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-2.5 sm:gap-4">
-                    {filteredGardenPlants.map((plant) => (
-                      <PlantCard
-                        key={plant.id}
-                        plant={plant}
-                        currentMonthIndex={currentMonthIndex}
-                        onSelect={(p) => setSelectedPlantForDetail(p)}
-                        onToggleFavorite={handleToggleFavorite}
-                        onToggleGarden={handleToggleInMyGarden}
-                      />
-                    ))}
-                  </div>
-                )}
+                <div ref={gardenResultsGridRef} className="scroll-mt-4">
+                  {filteredGardenPlants.length === 0 ? (
+                    <div className="bg-white rounded-3xl border border-stone-200 p-8 text-center space-y-3 shadow-2xs">
+                      <div className="w-12 h-12 rounded-2xl bg-amber-50 text-amber-700 flex items-center justify-center mx-auto border border-amber-200">
+                        <Search className="w-6 h-6" />
+                      </div>
+                      <div className="space-y-1">
+                        <p className="text-sm font-bold text-stone-900">
+                          No garden plants match &quot;{gardenSearchQuery}&quot;
+                        </p>
+                        <p className="text-xs text-stone-500 max-w-sm mx-auto">
+                          You haven&apos;t added this plant to your garden yet. You can find and add it from the full Reference Guide.
+                        </p>
+                      </div>
+                      <div className="pt-1 flex flex-wrap items-center justify-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setGardenSearchQuery('');
+                            setGardenSelectedCategory('all');
+                          }}
+                          className="min-h-[38px] px-3.5 py-1.5 text-xs text-stone-700 bg-stone-100 hover:bg-stone-200 rounded-xl font-bold cursor-pointer"
+                        >
+                          Clear search
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setSearchQuery(gardenSearchQuery);
+                            handleSelectTab('home');
+                          }}
+                          className="min-h-[38px] px-3.5 py-1.5 text-xs text-white bg-emerald-700 hover:bg-emerald-800 rounded-xl font-bold cursor-pointer"
+                        >
+                          Search All Plants →
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-2.5 sm:gap-4">
+                      {filteredGardenPlants.map((plant) => (
+                        <PlantCard
+                          key={plant.id}
+                          plant={plant}
+                          currentMonthIndex={currentMonthIndex}
+                          onSelect={(p) => setSelectedPlantForDetail(p)}
+                          onToggleFavorite={handleToggleFavorite}
+                          onToggleGarden={handleToggleInMyGarden}
+                          isHighlighted={highlightedPlantId === plant.id}
+                        />
+                      ))}
+                    </div>
+                  )}
+                </div>
 
                 {/* Helpful link to explore full reference guide */}
                 <div className="p-4 bg-emerald-50/70 border border-emerald-200/80 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
@@ -697,7 +921,7 @@ export default function App() {
                 {/* Switcher & Action buttons */}
                 <div className="pt-1 flex flex-wrap items-center gap-1.5 sm:gap-2">
                   <button
-                    onClick={() => setCurrentTab('my-garden')}
+                    onClick={() => handleSelectTab('my-garden')}
                     className="min-h-[38px] sm:min-h-[42px] inline-flex items-center gap-1.5 px-3 py-1.5 sm:px-4 sm:py-2 bg-emerald-600 hover:bg-emerald-500 text-xs font-bold text-white rounded-xl shadow-xs transition-all active:scale-95"
                   >
                     <Sprout className="w-3.5 h-3.5 text-emerald-200 shrink-0" />
@@ -739,41 +963,62 @@ export default function App() {
               onClearAll={handleClearAllFilters}
             />
 
-            {/* Plant Cards Grid (All 21 Plants Always Visible) */}
-            {filteredReferencePlants.length === 0 ? (
-              <div className="bg-white rounded-3xl border border-stone-200/80 p-10 text-center space-y-3">
-                <div className="w-12 h-12 rounded-2xl bg-stone-100 text-stone-400 flex items-center justify-center mx-auto">
-                  <Sprout className="w-6 h-6" />
+            {/* Plant Cards Grid or Clean No Plants Found State */}
+            <div ref={resultsGridRef} className="scroll-mt-4">
+              {filteredReferencePlants.length === 0 ? (
+                <div className="bg-white rounded-3xl border border-stone-200/90 p-8 sm:p-12 text-center space-y-4 shadow-sm animate-in fade-in duration-150">
+                  <div className="w-14 h-14 rounded-3xl bg-amber-50 text-amber-700 flex items-center justify-center mx-auto border border-amber-200 shadow-2xs">
+                    <Search className="w-7 h-7" />
+                  </div>
+                  <div className="space-y-1.5 max-w-md mx-auto">
+                    <h3 className="text-base sm:text-lg font-bold text-stone-900">
+                      {searchQuery.trim()
+                        ? `No plants found matching "${searchQuery}"`
+                        : 'No plants match your active filter criteria'}
+                    </h3>
+                    <p className="text-xs text-stone-500 leading-relaxed">
+                      {searchQuery.trim()
+                        ? 'Try searching by common English name (Tulsi, Rose, Jasmine, Money Plant), Hindi name (Gulab, Mogra, Genda), or category.'
+                        : `Try clearing filters to view all ${plants.length} authentic Indian terrace plants.`}
+                    </p>
+                  </div>
+                  <div className="pt-1 flex flex-wrap items-center justify-center gap-2.5">
+                    <button
+                      type="button"
+                      onClick={handleClearAllFilters}
+                      className="min-h-[40px] inline-flex items-center gap-1.5 px-4 py-2 text-xs font-bold text-stone-700 bg-stone-100 hover:bg-stone-200 rounded-xl transition-all cursor-pointer active:scale-95"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                      <span>Clear Search & Filters</span>
+                    </button>
+                    {searchQuery.trim() && (
+                      <button
+                        type="button"
+                        onClick={handleOpenAddModal}
+                        className="min-h-[40px] inline-flex items-center gap-1.5 px-4 py-2 bg-emerald-700 hover:bg-emerald-800 text-xs font-bold text-white rounded-xl shadow-xs transition-all cursor-pointer active:scale-95"
+                      >
+                        <Plus className="w-3.5 h-3.5 stroke-[2.5]" />
+                        <span>Add &quot;{searchQuery}&quot; as New Plant</span>
+                      </button>
+                    )}
+                  </div>
                 </div>
-                <h3 className="text-base font-bold text-stone-900">
-                  No plants match your active filter criteria
-                </h3>
-                <p className="text-xs text-stone-500 max-w-sm mx-auto">
-                  Try adjusting your search query, or clear filters to view all {plants.length} plants in the reference database.
-                </p>
-                <div className="pt-2 flex items-center justify-center gap-3">
-                  <button
-                    onClick={handleClearAllFilters}
-                    className="min-h-[44px] px-4 py-2 text-xs font-medium text-emerald-900 bg-emerald-50 hover:bg-emerald-100 rounded-xl transition-colors active:scale-95"
-                  >
-                    Clear All Filters
-                  </button>
+              ) : (
+                <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-2.5 sm:gap-4">
+                  {filteredReferencePlants.map((plant) => (
+                    <PlantCard
+                      key={plant.id}
+                      plant={plant}
+                      currentMonthIndex={currentMonthIndex}
+                      onSelect={(p) => setSelectedPlantForDetail(p)}
+                      onToggleFavorite={handleToggleFavorite}
+                      onToggleGarden={handleToggleInMyGarden}
+                      isHighlighted={highlightedPlantId === plant.id}
+                    />
+                  ))}
                 </div>
-              </div>
-            ) : (
-              <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-2.5 sm:gap-4">
-                {filteredReferencePlants.map((plant) => (
-                  <PlantCard
-                    key={plant.id}
-                    plant={plant}
-                    currentMonthIndex={currentMonthIndex}
-                    onSelect={(p) => setSelectedPlantForDetail(p)}
-                    onToggleFavorite={handleToggleFavorite}
-                    onToggleGarden={handleToggleInMyGarden}
-                  />
-                ))}
-              </div>
-            )}
+              )}
+            </div>
 
             {/* Footer Utilities: Backup, Export, Reset */}
             <div className="pt-6 border-t border-stone-200/70 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-stone-500">
@@ -825,7 +1070,7 @@ export default function App() {
             plants={plants}
             currentMonthIndex={currentMonthIndex}
             onSelectPlant={(p) => setSelectedPlantForDetail(p)}
-            onOpenMyGarden={() => setCurrentTab('my-garden')}
+            onOpenMyGarden={() => handleSelectTab('my-garden')}
           />
         )}
 
@@ -844,7 +1089,27 @@ export default function App() {
             plants={ownedPlants}
             onMarkFertilized={handleMarkFertilized}
             onSelectPlant={(p) => setSelectedPlantForDetail(p)}
-            onBrowseReference={() => setCurrentTab('home')}
+            onBrowseReference={() => handleSelectTab('home')}
+          />
+        )}
+
+        {/* VIEW 6: ADMIN MODERATION PORTAL (App Owner Only) */}
+        {currentTab === 'admin' && (
+          <AdminView
+            onBackToHome={() => setCurrentTab('home')}
+            onSelectPlantToInspect={(p) => setSelectedPlantForDetail(p)}
+            onShowToast={showToast}
+            onSharedCatalogUpdated={async () => {
+              if (user) {
+                const reloaded = await firestoreStorageService.loadPlantsForUser(user.uid);
+                setPlants(reloaded);
+              } else {
+                const local = storageService.getPlants();
+                const shared = await firestoreStorageService.getSharedPlants();
+                const localIds = new Set(local.map((p) => p.id));
+                setPlants([...local, ...shared.filter((s) => !localIds.has(s.id))]);
+              }
+            }}
           />
         )}
       </main>
@@ -852,12 +1117,7 @@ export default function App() {
       {/* Mobile Bottom Navigation Bar */}
       <BottomNav
         currentTab={currentTab}
-        onSelectTab={(tab) => {
-          setCurrentTab(tab);
-          if (tab !== 'diagnosis') {
-            setPreselectedDiagnosisPlantId(null);
-          }
-        }}
+        onSelectTab={handleSelectTab}
         onOpenScanModal={() => handleOpenScanModal()}
         overdueFertilizerCount={overdueFertilizerCount}
         gardenPlantCount={ownedPlants.length}
@@ -881,6 +1141,8 @@ export default function App() {
           onOpenScanModal={handleOpenScanModal}
           onMarkFertilized={handleMarkFertilized}
           onDeleteScanRecord={handleDeleteScanRecord}
+          onRequireAuth={requireAuth}
+          isLoggedIn={Boolean(user)}
         />
       )}
 
@@ -941,19 +1203,27 @@ export default function App() {
         </div>
       )}
 
-      {/* Login Modal for Guest Mode users to Sign In anytime */}
+      {/* Login Modal for Account Actions */}
       {showLoginModal && (
         <div className="fixed inset-0 z-50 overflow-y-auto bg-black/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-6 animate-in fade-in duration-150">
           <div className="relative w-full max-w-md">
-            <button
-              type="button"
-              onClick={() => setShowLoginModal(false)}
-              className="absolute top-4 right-4 z-20 w-8 h-8 rounded-full bg-white/90 hover:bg-white text-stone-700 flex items-center justify-center text-sm font-bold shadow-md active:scale-95 cursor-pointer"
-              title="Close"
-            >
-              <X className="w-4 h-4" />
-            </button>
-            <LoginScreen onContinueAsGuest={() => setShowLoginModal(false)} />
+            <LoginScreen
+              isModal={true}
+              promptReason={authPromptReason}
+              onClose={() => {
+                setShowLoginModal(false);
+                setPendingAction(null);
+                setAuthPromptReason(null);
+              }}
+              onSuccess={() => {
+                setShowLoginModal(false);
+              }}
+              onContinueAsGuest={() => {
+                setShowLoginModal(false);
+                setPendingAction(null);
+                setAuthPromptReason(null);
+              }}
+            />
           </div>
         </div>
       )}

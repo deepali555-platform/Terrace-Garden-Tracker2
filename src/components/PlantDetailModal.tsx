@@ -27,6 +27,7 @@ import {
   Clock,
   RotateCw,
   Plus,
+  LogIn,
 } from 'lucide-react';
 import { MONTHS, isPlantBloomingMonth, getPlantCategoryAccent } from '../utils/gardenHelpers';
 
@@ -43,6 +44,8 @@ interface PlantDetailModalProps {
   onOpenScanModal?: (plant: Plant) => void;
   onMarkFertilized?: (plantId: string, dateStr?: string) => void;
   onDeleteScanRecord?: (plantId: string, scanId: string) => void;
+  onRequireAuth?: (action: () => void, reason: string) => void;
+  isLoggedIn?: boolean;
 }
 
 export const PlantDetailModal: React.FC<PlantDetailModalProps> = ({
@@ -58,6 +61,8 @@ export const PlantDetailModal: React.FC<PlantDetailModalProps> = ({
   onOpenScanModal,
   onMarkFertilized,
   onDeleteScanRecord,
+  onRequireAuth,
+  isLoggedIn = false,
 }) => {
   const [activeTab, setActiveTab] = useState<'care' | 'calendar' | 'pests' | 'scans'>('care');
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -83,6 +88,14 @@ export const PlantDetailModal: React.FC<PlantDetailModalProps> = ({
   const handlePhotoSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file || !onUpdatePhoto) return;
+
+    if (!isLoggedIn && onRequireAuth) {
+      onRequireAuth(
+        () => fileInputRef.current?.click(),
+        `Sign in with Google to customize and save photos for ${plant.name}.`
+      );
+      return;
+    }
 
     try {
       setIsUploading(true);
@@ -511,7 +524,16 @@ export const PlantDetailModal: React.FC<PlantDetailModalProps> = ({
             </span>
           </button>
           <button
-            onClick={() => setActiveTab('scans')}
+            onClick={() => {
+              if (!isLoggedIn && onRequireAuth) {
+                onRequireAuth(
+                  () => setActiveTab('scans'),
+                  `Sign in with Google to view health diagnosis records for ${plant.name}.`
+                );
+                return;
+              }
+              setActiveTab('scans');
+            }}
             className={`min-h-[44px] px-3.5 py-2.5 text-xs sm:text-sm font-semibold border-b-2 transition-colors whitespace-nowrap flex items-center gap-1.5 ${
               activeTab === 'scans'
                 ? 'border-emerald-700 text-emerald-950 font-bold'
@@ -899,7 +921,38 @@ export const PlantDetailModal: React.FC<PlantDetailModalProps> = ({
           {/* TAB 4: Plant Health AI Scans & History Log */}
           {activeTab === 'scans' && (
             <div className="space-y-5">
-              {!plant.inMyGarden ? (
+              {!isLoggedIn ? (
+                <div className="bg-white rounded-3xl border border-stone-200 p-8 sm:p-12 text-center space-y-4 shadow-2xs">
+                  <div className="w-14 h-14 rounded-2xl bg-amber-50 text-amber-800 flex items-center justify-center mx-auto border border-amber-200 shadow-2xs">
+                    <Sparkles className="w-7 h-7 text-amber-700" />
+                  </div>
+                  <div className="space-y-1">
+                    <h4 className="text-base font-bold text-stone-900">
+                      Sign In to View Health Scans
+                    </h4>
+                    <p className="text-xs text-stone-600 max-w-md mx-auto leading-relaxed">
+                      AI health diagnosis logs and image records are private to your Google account.
+                    </p>
+                  </div>
+                  {onRequireAuth && (
+                    <div className="pt-2">
+                      <button
+                        type="button"
+                        onClick={() =>
+                          onRequireAuth(
+                            () => setActiveTab('scans'),
+                            `Sign in with Google to view health diagnosis records for ${plant.name}.`
+                          )
+                        }
+                        className="min-h-[44px] inline-flex items-center gap-2 px-5 py-2.5 bg-emerald-700 hover:bg-emerald-800 text-white rounded-2xl text-xs sm:text-sm font-bold shadow-md transition-all active:scale-95 cursor-pointer"
+                      >
+                        <LogIn className="w-4 h-4 text-emerald-200" />
+                        <span>Sign in with Google</span>
+                      </button>
+                    </div>
+                  )}
+                </div>
+              ) : !plant.inMyGarden ? (
                 <div className="bg-white rounded-3xl border border-stone-200 p-8 sm:p-12 text-center space-y-4 shadow-2xs">
                   <div className="w-14 h-14 rounded-2xl bg-emerald-50 text-emerald-800 flex items-center justify-center mx-auto border border-emerald-200">
                     <Leaf className="w-7 h-7" />

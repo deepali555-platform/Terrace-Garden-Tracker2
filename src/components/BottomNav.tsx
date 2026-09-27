@@ -2,8 +2,8 @@ import React from 'react';
 import { Sprout, Calendar, Leaf, Sparkles, Stethoscope, Camera } from 'lucide-react';
 
 interface BottomNavProps {
-  currentTab: 'home' | 'my-garden' | 'reminders' | 'diagnosis' | 'fertilizer';
-  onSelectTab: (tab: 'home' | 'my-garden' | 'reminders' | 'diagnosis' | 'fertilizer') => void;
+  currentTab: 'home' | 'my-garden' | 'reminders' | 'diagnosis' | 'fertilizer' | 'admin';
+  onSelectTab: (tab: 'home' | 'my-garden' | 'reminders' | 'diagnosis' | 'fertilizer' | 'admin') => void;
   onOpenScanModal?: () => void;
   overdueFertilizerCount?: number;
   gardenPlantCount?: number;

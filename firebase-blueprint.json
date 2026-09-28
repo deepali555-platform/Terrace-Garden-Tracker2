@@ -66,7 +66,7 @@
     },
     "SharedCatalogPlant": {
       "title": "SharedCatalogPlant",
-      "description": "Community plant approved by admin into the global reference catalog",
+      "description": "Community plant in the shared reference catalog, visible to all users and guests immediately",
       "type": "object",
       "properties": {
         "id": { "type": "string", "description": "Shared plant ID" },
@@ -74,10 +74,12 @@
         "category": { "type": "string", "description": "Plant category" },
         "addedByUserId": { "type": "string", "description": "Original creator user ID" },
         "addedByUserEmail": { "type": "string", "description": "Original creator email" },
-        "approvedAt": { "type": "string", "description": "Admin approval ISO timestamp" },
+        "addedByUserName": { "type": "string", "description": "Original creator display name" },
+        "createdAt": { "type": "string", "description": "Creation ISO timestamp" },
+        "updatedAt": { "type": "string", "description": "Update ISO timestamp" },
         "isSharedCatalog": { "type": "boolean", "description": "True for shared catalog plants" }
       },
-      "required": ["id", "name", "category", "approvedAt", "isSharedCatalog"]
+      "required": ["id", "name", "category", "isSharedCatalog"]
     }
   },
   "firestore": {

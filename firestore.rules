@@ -51,8 +51,17 @@ service cloud.firestore {
     match /sharedPlants/{plantId} {
       // Browsable by everyone (including guests who are not signed in)
       allow read: if true;
-      // Only admin can publish, update or remove shared catalog plants
-      allow write: if isAdmin();
+
+      // Only logged-in users can create new plants
+      allow create: if isAuthenticated();
+
+      // Only the creator or the admin can update or delete a plant
+      // Pre-populated plants (without addedByUserId) can only be edited or deleted by the admin
+      allow update, delete: if isAdmin() || (
+        isAuthenticated() && 
+        resource.data.addedByUserId != null && 
+        resource.data.addedByUserId == request.auth.uid
+      );
     }
   }
 }

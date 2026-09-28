@@ -28,8 +28,11 @@ import {
   RotateCw,
   Plus,
   LogIn,
+  User as UserIcon,
 } from 'lucide-react';
 import { MONTHS, isPlantBloomingMonth, getPlantCategoryAccent } from '../utils/gardenHelpers';
+import { useAuth } from '../contexts/AuthContext';
+import { isUserAdmin } from '../config/adminConfig';
 
 interface PlantDetailModalProps {
   plant: Plant;
@@ -70,6 +73,12 @@ export const PlantDetailModal: React.FC<PlantDetailModalProps> = ({
   const [justMarkedFertilized, setJustMarkedFertilized] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const { user } = useAuth();
+  const isAdmin = Boolean(user?.email && isUserAdmin(user.email));
+  const isCreator = Boolean(user?.uid && plant.addedByUserId && plant.addedByUserId === user.uid);
+  const isPrePopulated = !plant.addedByUserId;
+  const canEditOrDelete = isAdmin || (isCreator && !isPrePopulated);
 
   const isBloomingNow = isPlantBloomingMonth(plant, currentMonthIndex);
   const accent = getPlantCategoryAccent(plant.category);
@@ -188,24 +197,28 @@ export const PlantDetailModal: React.FC<PlantDetailModalProps> = ({
                     }`}
                   />
                 </button>
-                <button
-                  type="button"
-                  onClick={() => onEdit(plant)}
-                  className="w-11 h-11 rounded-full bg-black/60 hover:bg-black/80 text-white backdrop-blur-md transition-colors flex items-center justify-center shadow-md active:scale-95"
-                  title="Edit Plant"
-                  aria-label="Edit Plant"
-                >
-                  <Pencil className="w-4 h-4" />
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setShowDeleteConfirm(true)}
-                  className="w-11 h-11 rounded-full bg-black/60 hover:bg-rose-900/80 text-white backdrop-blur-md transition-colors flex items-center justify-center shadow-md active:scale-95"
-                  title="Delete Plant"
-                  aria-label="Delete Plant"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </button>
+                {canEditOrDelete && (
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => onEdit(plant)}
+                      className="w-11 h-11 rounded-full bg-black/60 hover:bg-black/80 text-white backdrop-blur-md transition-colors flex items-center justify-center shadow-md active:scale-95"
+                      title={isAdmin && isPrePopulated ? "Edit Plant (Admin)" : "Edit Plant"}
+                      aria-label="Edit Plant"
+                    >
+                      <Pencil className="w-4 h-4" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setShowDeleteConfirm(true)}
+                      className="w-11 h-11 rounded-full bg-black/60 hover:bg-rose-900/80 text-white backdrop-blur-md transition-colors flex items-center justify-center shadow-md active:scale-95"
+                      title={isAdmin && isPrePopulated ? "Delete Plant (Admin)" : "Delete Plant"}
+                      aria-label="Delete Plant"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </>
+                )}
               </div>
             </div>
 
@@ -295,6 +308,24 @@ export const PlantDetailModal: React.FC<PlantDetailModalProps> = ({
                     <span>Blooming</span>
                   </span>
                 )}
+
+                {/* Contributor Attribution Badge */}
+                {plant.addedByUserName ? (
+                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-black/60 text-white border border-white/20 backdrop-blur-xs shadow-xs">
+                    <UserIcon className="w-3 h-3 text-emerald-300" />
+                    <span>Added by {plant.addedByUserName}</span>
+                    {plant.createdAt && (
+                      <span className="text-white/70 text-[10px]">
+                        · {new Date(plant.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                      </span>
+                    )}
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-950/80 text-emerald-200 border border-emerald-500/30 backdrop-blur-xs shadow-xs">
+                    <Sparkles className="w-3 h-3 text-amber-300" />
+                    <span>Vriksha Vatika</span>
+                  </span>
+                )}
               </div>
 
               <h1 className="text-xl sm:text-3xl font-extrabold text-white tracking-tight drop-shadow-md truncate">
@@ -355,6 +386,24 @@ export const PlantDetailModal: React.FC<PlantDetailModalProps> = ({
                     <span>Blooming</span>
                   </span>
                 )}
+
+                {/* Contributor Attribution Badge */}
+                {plant.addedByUserName ? (
+                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-stone-100 text-stone-700 border border-stone-200">
+                    <UserIcon className="w-3 h-3 text-emerald-700" />
+                    <span>Added by {plant.addedByUserName}</span>
+                    {plant.createdAt && (
+                      <span className="text-stone-500 text-[10px]">
+                        · {new Date(plant.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                      </span>
+                    )}
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200">
+                    <Sparkles className="w-3 h-3 text-amber-500" />
+                    <span>Vriksha Vatika</span>
+                  </span>
+                )}
               </div>
 
               {/* Action Buttons: 44px Touch Hitbox */}
@@ -372,24 +421,28 @@ export const PlantDetailModal: React.FC<PlantDetailModalProps> = ({
                     }`}
                   />
                 </button>
-                <button
-                  type="button"
-                  onClick={() => onEdit(plant)}
-                  className="w-11 h-11 rounded-full bg-white hover:bg-stone-100 text-stone-600 border border-stone-200 shadow-2xs transition-colors flex items-center justify-center active:scale-95"
-                  title="Edit Plant"
-                  aria-label="Edit Plant"
-                >
-                  <Pencil className="w-4 h-4" />
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setShowDeleteConfirm(true)}
-                  className="w-11 h-11 rounded-full bg-white hover:bg-rose-50 text-stone-600 hover:text-rose-700 border border-stone-200 shadow-2xs transition-colors flex items-center justify-center active:scale-95"
-                  title="Delete Plant"
-                  aria-label="Delete Plant"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </button>
+                {canEditOrDelete && (
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => onEdit(plant)}
+                      className="w-11 h-11 rounded-full bg-white hover:bg-stone-100 text-stone-600 border border-stone-200 shadow-2xs transition-colors flex items-center justify-center active:scale-95"
+                      title={isAdmin && isPrePopulated ? "Edit Plant (Admin)" : "Edit Plant"}
+                      aria-label="Edit Plant"
+                    >
+                      <Pencil className="w-4 h-4" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setShowDeleteConfirm(true)}
+                      className="w-11 h-11 rounded-full bg-white hover:bg-rose-50 text-stone-600 hover:text-rose-700 border border-stone-200 shadow-2xs transition-colors flex items-center justify-center active:scale-95"
+                      title={isAdmin && isPrePopulated ? "Delete Plant (Admin)" : "Delete Plant"}
+                      aria-label="Delete Plant"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </>
+                )}
                 <button
                   type="button"
                   onClick={onClose}

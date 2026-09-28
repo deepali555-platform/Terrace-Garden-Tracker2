@@ -6,6 +6,8 @@ import {
   deleteDoc,
   query,
   orderBy,
+  onSnapshot,
+  Unsubscribe,
 } from 'firebase/firestore';
 import { db } from '../firebase';
 import { Plant, HealthScanRecord } from '../types/plant';
@@ -25,9 +27,50 @@ export interface UserPlantStateDoc {
   updatedAt: string;
 }
 
+/**
+ * Normalizes plant name for strict case-insensitive and whitespace-insensitive duplicate detection.
+ * e.g. "  Holy   Basil  " -> "holy basil"
+ */
+export function normalizePlantName(name: string): string {
+  return (name || '').trim().toLowerCase().replace(/\s+/g, ' ');
+}
+
 export const firestoreStorageService = {
   /**
-   * Fetches community plants approved by admin into the global reference catalog.
+   * Listens to real-time updates on the shared plants collection.
+   * Fires whenever any user adds, edits, or removes a plant from the shared catalog.
+   */
+  subscribeToSharedPlants(
+    onUpdate: (plants: Plant[]) => void,
+    onError?: (err: Error) => void
+  ): Unsubscribe {
+    const sharedRef = collection(db, 'sharedPlants');
+    return onSnapshot(
+      sharedRef,
+      (snapshot) => {
+        const shared: Plant[] = [];
+        snapshot.forEach((d) => {
+          shared.push(d.data() as Plant);
+        });
+
+        // Cache locally for offline guest experience
+        try {
+          localStorage.setItem('terrace_garden_shared_plants_cache', JSON.stringify(shared));
+        } catch {
+          // quota
+        }
+
+        onUpdate(shared);
+      },
+      (err) => {
+        console.warn('Real-time shared plants listener error:', err);
+        if (onError) onError(err);
+      }
+    );
+  },
+
+  /**
+   * Fetches community plants approved or added into the global reference catalog.
    * Browsable by everyone (both authenticated users and guests).
    */
   async getSharedPlants(): Promise<Plant[]> {
@@ -62,18 +105,158 @@ export const firestoreStorageService = {
   },
 
   /**
-   * Loads full plant list for authenticated user.
-   * Merges base reference plants + admin-approved shared plants with user's private garden state and custom plants.
-   * Migrates pre-existing local storage data to the user's Firestore on first login.
+   * Migrates legacy private custom plants and submitted plants to the shared catalog (skipping duplicates).
    */
-  async loadPlantsForUser(userId: string): Promise<Plant[]> {
+  async migrateLegacyCustomPlants(
+    userId: string,
+    user: { uid: string; email?: string | null; displayName?: string | null }
+  ): Promise<void> {
+    try {
+      const currentShared = await this.getSharedPlants();
+      const existingNames = new Set(
+        [...INITIAL_PLANTS, ...currentShared].map((p) => normalizePlantName(p.name))
+      );
+
+      // 1. Migrate from /users/{userId}/customPlants
+      try {
+        const customPlantsRef = collection(db, 'users', userId, 'customPlants');
+        const snap = await getDocs(customPlantsRef);
+        for (const d of snap.docs) {
+          const cp = d.data() as Plant;
+          const normalized = normalizePlantName(cp.name);
+
+          if (!existingNames.has(normalized)) {
+            const sharedDoc: Plant = {
+              ...cp,
+              isSharedCatalog: true,
+              addedByUserId: userId,
+              addedByUserEmail: user.email || undefined,
+              addedByUserName: user.displayName || user.email?.split('@')[0] || 'Community Gardener',
+              createdAt: cp.createdAt || new Date().toISOString(),
+              updatedAt: new Date().toISOString(),
+            };
+
+            await setDoc(doc(db, 'sharedPlants', cp.id), {
+              ...sharedDoc,
+              inMyGarden: false,
+            });
+
+            // Keep user's private ownership state in userPlants
+            await setDoc(
+              doc(db, 'users', userId, 'userPlants', cp.id),
+              {
+                id: cp.id,
+                userId,
+                inMyGarden: true,
+                isFavorite: Boolean(cp.isFavorite),
+                lastFertilizedDate: cp.lastFertilizedDate || undefined,
+                customPhotoUrl: cp.customPhotoUrl || undefined,
+                scanHistory: cp.scanHistory || [],
+                updatedAt: new Date().toISOString(),
+              },
+              { merge: true }
+            );
+
+            existingNames.add(normalized);
+          }
+
+          // Clean up legacy customPlants document
+          try {
+            await deleteDoc(d.ref);
+          } catch {
+            // ignore
+          }
+        }
+      } catch (subErr) {
+        console.warn('Could not read user customPlants for migration:', subErr);
+      }
+
+      // 2. Migrate any legacy custom plants from local storage
+      try {
+        const localPlants = storageService.getPlants();
+        const localCustoms = localPlants.filter(
+          (p) => (p.id.startsWith('custom-') || (p as any).isCustomPlant) && !p.id.startsWith('shared-')
+        );
+        for (const lp of localCustoms) {
+          const normalized = normalizePlantName(lp.name);
+          if (!existingNames.has(normalized)) {
+            const newSharedId = 'shared-' + Date.now() + '-' + Math.random().toString(36).substring(2, 7);
+            const sharedDoc: Plant = {
+              ...lp,
+              id: newSharedId,
+              isSharedCatalog: true,
+              addedByUserId: userId,
+              addedByUserEmail: user.email || undefined,
+              addedByUserName: user.displayName || user.email?.split('@')[0] || 'Community Gardener',
+              createdAt: lp.createdAt || new Date().toISOString(),
+              updatedAt: new Date().toISOString(),
+            };
+
+            await setDoc(doc(db, 'sharedPlants', newSharedId), {
+              ...sharedDoc,
+              inMyGarden: false,
+            });
+
+            await setDoc(
+              doc(db, 'users', userId, 'userPlants', newSharedId),
+              {
+                id: newSharedId,
+                userId,
+                inMyGarden: true,
+                isFavorite: Boolean(lp.isFavorite),
+                lastFertilizedDate: lp.lastFertilizedDate || undefined,
+                customPhotoUrl: lp.customPhotoUrl || undefined,
+                scanHistory: lp.scanHistory || [],
+                updatedAt: new Date().toISOString(),
+              },
+              { merge: true }
+            );
+
+            existingNames.add(normalized);
+          }
+        }
+      } catch (localErr) {
+        console.warn('Could not migrate local storage custom plants:', localErr);
+      }
+    } catch (err) {
+      console.warn('Migration of legacy custom plants encountered an error:', err);
+    }
+  },
+
+  /**
+   * Loads the private user plant states map for an authenticated user.
+   */
+  async loadUserPlantStates(userId: string): Promise<Map<string, UserPlantStateDoc>> {
+    const userPlantStates = new Map<string, UserPlantStateDoc>();
     try {
       const userPlantsRef = collection(db, 'users', userId, 'userPlants');
-      const customPlantsRef = collection(db, 'users', userId, 'customPlants');
+      const snap = await getDocs(userPlantsRef);
+      snap.forEach((docSnap) => {
+        userPlantStates.set(docSnap.id, docSnap.data() as UserPlantStateDoc);
+      });
+    } catch (err) {
+      console.warn('Failed to load private userPlantStates:', err);
+    }
+    return userPlantStates;
+  },
 
-      const [userPlantsSnap, customPlantsSnap, sharedPlants] = await Promise.all([
+  /**
+   * Loads full plant list for authenticated user.
+   * Merges base reference plants + shared plants with user's private garden state.
+   */
+  async loadPlantsForUser(
+    userId: string,
+    user?: { uid: string; email?: string | null; displayName?: string | null }
+  ): Promise<Plant[]> {
+    try {
+      // Run background migration of any legacy custom plants
+      if (user) {
+        this.migrateLegacyCustomPlants(userId, user).catch(() => {});
+      }
+
+      const userPlantsRef = collection(db, 'users', userId, 'userPlants');
+      const [userPlantsSnap, sharedPlants] = await Promise.all([
         getDocs(userPlantsRef),
-        getDocs(customPlantsRef),
         this.getSharedPlants(),
       ]);
 
@@ -82,101 +265,14 @@ export const firestoreStorageService = {
         userPlantStates.set(docSnap.id, docSnap.data() as UserPlantStateDoc);
       });
 
-      const customPlants: Plant[] = [];
-      customPlantsSnap.forEach((docSnap) => {
-        customPlants.push(docSnap.data() as Plant);
-      });
+      // Combine base seed plants and all shared plants
+      // Prevent duplicates by ID
+      const sharedPlantIds = new Set(sharedPlants.map((p) => p.id));
+      const filteredSeedPlants = INITIAL_PLANTS.filter((sp) => !sharedPlantIds.has(sp.id));
+      const allReferenceCatalog = [...filteredSeedPlants, ...sharedPlants];
 
-      // Ensure user's existing custom plants are also registered in userSubmittedPlants for admin review
-      for (const cp of customPlants) {
-        try {
-          await setDoc(
-            doc(db, 'userSubmittedPlants', cp.id),
-            {
-              id: cp.id,
-              originalPlantId: cp.id,
-              userId,
-              plantName: cp.name,
-              botanicalName: cp.botanicalName || '',
-              category: cp.category,
-              plantData: cp,
-              status: 'pending',
-              submittedAt: cp.createdAt || new Date().toISOString(),
-            },
-            { merge: true }
-          );
-        } catch {
-          // ignore background sync error
-        }
-      }
-
-      // Check if user has no cloud data yet: migrate pre-existing local data if present
-      if (userPlantStates.size === 0 && customPlants.length === 0) {
-        console.log('First login for user: checking for existing local data to migrate...');
-        const localPlants = storageService.getPlants();
-
-        // Migrate any custom plants and custom garden statuses to Firestore
-        const migrationPromises: Promise<unknown>[] = [];
-
-        for (const localP of localPlants) {
-          if (localP.id.startsWith('custom-')) {
-            // User created plant
-            migrationPromises.push(
-              setDoc(doc(db, 'users', userId, 'customPlants', localP.id), {
-                ...localP,
-                userId,
-                updatedAt: new Date().toISOString(),
-              })
-            );
-            // Also submit to admin review
-            migrationPromises.push(
-              setDoc(doc(db, 'userSubmittedPlants', localP.id), {
-                id: localP.id,
-                originalPlantId: localP.id,
-                userId,
-                plantName: localP.name,
-                botanicalName: localP.botanicalName || '',
-                category: localP.category,
-                plantData: localP,
-                status: 'pending',
-                submittedAt: localP.createdAt || new Date().toISOString(),
-              }, { merge: true })
-            );
-            customPlants.push(localP);
-          } else {
-            // Reference plant with user-specific state
-            const stateDoc: UserPlantStateDoc = {
-              id: localP.id,
-              userId,
-              inMyGarden: Boolean(localP.inMyGarden),
-              isFavorite: Boolean(localP.isFavorite),
-              lastFertilizedDate: localP.lastFertilizedDate || undefined,
-              customPhotoUrl: localP.customPhotoUrl || undefined,
-              scanHistory: localP.scanHistory || [],
-              updatedAt: new Date().toISOString(),
-            };
-            migrationPromises.push(
-              setDoc(doc(db, 'users', userId, 'userPlants', localP.id), stateDoc)
-            );
-            userPlantStates.set(localP.id, stateDoc);
-          }
-        }
-
-        if (migrationPromises.length > 0) {
-          await Promise.all(migrationPromises);
-          console.log(`Migrated ${migrationPromises.length} records to Firestore for user ${userId}`);
-        }
-      }
-
-      // Merge base seed plants + community shared plants
-      // Prevent duplicates if user has a custom plant with the same ID as a shared plant
-      const customPlantIds = new Set(customPlants.map((p) => p.id));
-      const filteredSharedPlants = sharedPlants.filter((sp) => !customPlantIds.has(sp.id));
-
-      const allReferenceCatalog = [...INITIAL_PLANTS, ...filteredSharedPlants];
-
-      // Assemble base reference catalog with user's private data overlay
-      const basePlantsWithUserState: Plant[] = allReferenceCatalog.map((basePlant) => {
+      // Assemble reference catalog with user's private data overlay
+      const combinedWithUserState: Plant[] = allReferenceCatalog.map((basePlant) => {
         const userState = userPlantStates.get(basePlant.id);
         const verified = VERIFIED_PLANT_IMAGES[basePlant.id];
         return {
@@ -190,20 +286,16 @@ export const firestoreStorageService = {
         };
       });
 
-      // Combine custom plants (at top) + reference plants
-      const combined = [...customPlants, ...basePlantsWithUserState];
-
       // Save user-scoped local cache for instant offline fallback
       try {
-        localStorage.setItem(`terrace_garden_plants_user_${userId}`, JSON.stringify(combined));
+        localStorage.setItem(`terrace_garden_plants_user_${userId}`, JSON.stringify(combinedWithUserState));
       } catch {
         // quota ignore
       }
 
-      return combined;
+      return combinedWithUserState;
     } catch (err) {
       console.error('Failed to load user plants from Firestore:', err);
-      // Fallback to user-scoped local cache or default
       const cached = localStorage.getItem(`terrace_garden_plants_user_${userId}`);
       if (cached) {
         try {
@@ -217,98 +309,173 @@ export const firestoreStorageService = {
   },
 
   /**
-   * Syncs plant ownership, favorite status, or last fertilization to Firestore
+   * Syncs plant ownership, favorite status, or last fertilization to user's private Firestore space
    */
   async syncUserPlantState(
     userId: string,
     plant: Plant
   ): Promise<void> {
     try {
-      if (plant.id.startsWith('custom-')) {
-        // Full update to custom plant
-        await setDoc(
-          doc(db, 'users', userId, 'customPlants', plant.id),
-          {
-            ...plant,
-            userId,
-            updatedAt: new Date().toISOString(),
-          },
-          { merge: true }
-        );
-      } else {
-        // Reference plant state update
-        const stateDoc: UserPlantStateDoc = {
-          id: plant.id,
-          userId,
-          inMyGarden: Boolean(plant.inMyGarden),
-          isFavorite: Boolean(plant.isFavorite),
-          lastFertilizedDate: plant.lastFertilizedDate,
-          customPhotoUrl: plant.customPhotoUrl,
-          scanHistory: plant.scanHistory || [],
-          updatedAt: new Date().toISOString(),
-        };
-        await setDoc(doc(db, 'users', userId, 'userPlants', plant.id), stateDoc, { merge: true });
-      }
+      const stateDoc: UserPlantStateDoc = {
+        id: plant.id,
+        userId,
+        inMyGarden: Boolean(plant.inMyGarden),
+        isFavorite: Boolean(plant.isFavorite),
+        lastFertilizedDate: plant.lastFertilizedDate,
+        customPhotoUrl: plant.customPhotoUrl,
+        scanHistory: plant.scanHistory || [],
+        updatedAt: new Date().toISOString(),
+      };
+      await setDoc(doc(db, 'users', userId, 'userPlants', plant.id), stateDoc, { merge: true });
     } catch (err) {
       console.warn('Failed to sync plant state to Firestore:', err);
     }
   },
 
   /**
-   * Adds a new custom plant under the user's private collection AND
-   * registers it in userSubmittedPlants for admin review into the shared catalog.
+   * Checks whether a plant name already exists in the catalog (case-insensitive, ignoring extra spaces).
    */
-  async addCustomPlant(
-    user: { uid: string; email?: string | null; displayName?: string | null },
-    plantData: Omit<Plant, 'id' | 'createdAt' | 'updatedAt'>
-  ): Promise<Plant> {
-    const newPlant: Plant = {
-      ...plantData,
-      id: 'custom-' + Date.now() + '-' + Math.random().toString(36).substring(2, 7),
-      inMyGarden: true, // newly added plant is owned by default
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    };
-
-    try {
-      // 1. Save privately to user's collection
-      await setDoc(doc(db, 'users', user.uid, 'customPlants', newPlant.id), {
-        ...newPlant,
-        userId: user.uid,
-      });
-
-      // 2. Submit to top-level review collection for admin moderation
-      const submission: UserSubmittedPlantRecord = {
-        id: newPlant.id,
-        originalPlantId: newPlant.id,
-        userId: user.uid,
-        userEmail: user.email || undefined,
-        userDisplayName: user.displayName || user.email || 'Terrace Gardener',
-        plantName: newPlant.name,
-        botanicalName: newPlant.botanicalName,
-        category: newPlant.category,
-        plantData: newPlant,
-        status: 'pending',
-        submittedAt: newPlant.createdAt || new Date().toISOString(),
-      };
-
-      await setDoc(doc(db, 'userSubmittedPlants', newPlant.id), submission);
-    } catch (err) {
-      console.error('Failed to save custom plant or submission to Firestore:', err);
-    }
-
-    return newPlant;
+  checkDuplicateName(name: string, catalog: Plant[], excludePlantId?: string): Plant | undefined {
+    const normalized = normalizePlantName(name);
+    return catalog.find(
+      (p) => p.id !== excludePlantId && normalizePlantName(p.name) === normalized
+    );
   },
 
   /**
-   * Deletes a custom plant from user's private collection
+   * Adds a new plant directly to the shared catalog so it is immediately visible to ALL users and guests.
+   * Also adds the plant to the author's private My Garden.
+   * Performs duplicate prevention beforehand.
+   */
+  async addSharedPlant(
+    user: { uid: string; email?: string | null; displayName?: string | null },
+    plantData: Omit<Plant, 'id' | 'createdAt' | 'updatedAt'>,
+    existingCatalog: Plant[]
+  ): Promise<{ success: boolean; plant?: Plant; existingPlant?: Plant; error?: string }> {
+    // 1. Duplicate prevention
+    const duplicate = this.checkDuplicateName(plantData.name, existingCatalog);
+    if (duplicate) {
+      return {
+        success: false,
+        existingPlant: duplicate,
+        error: 'duplicate',
+      };
+    }
+
+    const newPlantId = 'shared-' + Date.now() + '-' + Math.random().toString(36).substring(2, 7);
+    const now = new Date().toISOString();
+
+    const sharedPlant: Plant = {
+      ...plantData,
+      id: newPlantId,
+      isSharedCatalog: true,
+      addedByUserId: user.uid,
+      addedByUserEmail: user.email || undefined,
+      addedByUserName: user.displayName || user.email?.split('@')[0] || 'Community Gardener',
+      createdAt: now,
+      updatedAt: now,
+      inMyGarden: true, // owned by creator
+    };
+
+    try {
+      // 1. Save directly into shared global catalog (without inMyGarden so other users start unowned)
+      await setDoc(doc(db, 'sharedPlants', newPlantId), {
+        ...sharedPlant,
+        inMyGarden: false,
+      });
+
+      // 2. Save creator's private ownership state in userPlants
+      await setDoc(
+        doc(db, 'users', user.uid, 'userPlants', newPlantId),
+        {
+          id: newPlantId,
+          userId: user.uid,
+          inMyGarden: true,
+          updatedAt: now,
+        },
+        { merge: true }
+      );
+
+      return {
+        success: true,
+        plant: sharedPlant,
+      };
+    } catch (err) {
+      console.error('Failed to save shared plant to Firestore:', err);
+      return {
+        success: false,
+        error: (err as Error).message || 'Failed to save to shared catalog',
+      };
+    }
+  },
+
+  /**
+   * Backward-compatible alias for addSharedPlant
+   */
+  async addCustomPlant(
+    user: { uid: string; email?: string | null; displayName?: string | null },
+    plantData: Omit<Plant, 'id' | 'createdAt' | 'updatedAt'>,
+    existingCatalog: Plant[] = []
+  ): Promise<Plant> {
+    const res = await this.addSharedPlant(user, plantData, existingCatalog);
+    if (res.success && res.plant) {
+      return res.plant;
+    }
+    if (res.existingPlant) {
+      return res.existingPlant;
+    }
+    throw new Error(res.error || 'Failed to add plant');
+  },
+
+  /**
+   * Updates an existing shared plant in the shared catalog (permitted for creator or admin).
+   */
+  async updateSharedPlant(
+    user: { uid: string; email?: string | null },
+    updatedPlant: Plant
+  ): Promise<void> {
+    const now = new Date().toISOString();
+    try {
+      await setDoc(
+        doc(db, 'sharedPlants', updatedPlant.id),
+        {
+          ...updatedPlant,
+          updatedAt: now,
+        },
+        { merge: true }
+      );
+    } catch (err) {
+      console.warn('Failed to update sharedPlant document:', err);
+      throw err;
+    }
+
+    if (user?.uid) {
+      await this.syncUserPlantState(user.uid, updatedPlant);
+    }
+  },
+
+  /**
+   * Deletes a shared plant from the shared catalog (permitted for creator or admin).
+   */
+  async deleteSharedPlant(userId: string, plantId: string): Promise<void> {
+    try {
+      await deleteDoc(doc(db, 'sharedPlants', plantId));
+      try {
+        await deleteDoc(doc(db, 'users', userId, 'userPlants', plantId));
+      } catch {
+        // user might not have had it in private userPlants
+      }
+    } catch (err) {
+      console.error('Failed to delete plant from shared catalog:', err);
+      throw err;
+    }
+  },
+
+  /**
+   * Deletes a custom/shared plant
    */
   async deleteCustomPlant(userId: string, plantId: string): Promise<void> {
-    try {
-      await deleteDoc(doc(db, 'users', userId, 'customPlants', plantId));
-    } catch (err) {
-      console.error('Failed to delete custom plant from Firestore:', err);
-    }
+    return this.deleteSharedPlant(userId, plantId);
   },
 
   /* =======================================================================

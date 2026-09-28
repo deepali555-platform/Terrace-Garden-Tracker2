@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useMemo } from 'react';
 import { Plant, PlantCategory, SunlightType, WaterLevel, DiseasePestInfo } from '../types/plant';
 import {
   X,
@@ -15,20 +15,27 @@ import {
   AlertTriangle,
   ArrowRight,
   Globe,
+  Eye,
 } from 'lucide-react';
 import { MONTHS, CATEGORIES, SUNLIGHT_OPTIONS, WATER_OPTIONS, getPlantCategoryAccent } from '../utils/gardenHelpers';
 import { compressImageFile } from '../utils/imageUploadHelper';
 
 interface PlantFormModalProps {
   initialPlant?: Plant | null;
+  existingPlants?: Plant[];
   onSave: (plant: Omit<Plant, 'id' | 'createdAt' | 'updatedAt'> | Plant) => void;
   onClose: () => void;
+  onOpenExistingPlant?: (plant: Plant) => void;
+  onAddExistingToGarden?: (plant: Plant) => void;
 }
 
 export const PlantFormModal: React.FC<PlantFormModalProps> = ({
   initialPlant,
+  existingPlants = [],
   onSave,
   onClose,
+  onOpenExistingPlant,
+  onAddExistingToGarden,
 }) => {
   const isEditing = Boolean(initialPlant);
 
@@ -173,6 +180,19 @@ export const PlantFormModal: React.FC<PlantFormModalProps> = ({
 
   const [notes, setNotes] = useState(initialPlant?.notes || '');
   const [error, setError] = useState('');
+
+  // Case-insensitive, extra space-ignoring duplicate detector
+  const normalizedInputName = name.trim().toLowerCase().replace(/\s+/g, ' ');
+  const detectedDuplicate = useMemo(() => {
+    if (!normalizedInputName) return null;
+    return (
+      existingPlants.find(
+        (p) =>
+          (!initialPlant || p.id !== initialPlant.id) &&
+          p.name.trim().toLowerCase().replace(/\s+/g, ' ') === normalizedInputName
+      ) || null
+    );
+  }, [existingPlants, initialPlant, normalizedInputName]);
 
   const toggleMonth = (
     currentList: number[],
@@ -417,6 +437,13 @@ export const PlantFormModal: React.FC<PlantFormModalProps> = ({
     e.preventDefault();
     if (!name.trim()) {
       setError('Plant Name is required.');
+      return;
+    }
+
+    if (detectedDuplicate) {
+      setError(
+        `A plant named "${detectedDuplicate.name}" already exists in the shared catalog. Please view the existing plant or add it to your garden below.`
+      );
       return;
     }
 
@@ -735,9 +762,74 @@ export const PlantFormModal: React.FC<PlantFormModalProps> = ({
                   required
                   placeholder="e.g. Tulsi, Desi Rose, Tomato"
                   value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  className="w-full min-h-[44px] px-3.5 py-2.5 bg-stone-50 border border-stone-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-700 text-base sm:text-sm text-stone-900"
+                  onChange={(e) => {
+                    setName(e.target.value);
+                    if (error) setError('');
+                  }}
+                  className={`w-full min-h-[44px] px-3.5 py-2.5 bg-stone-50 border rounded-xl focus:bg-white focus:outline-none focus:ring-2 text-base sm:text-sm text-stone-900 transition-colors ${
+                    detectedDuplicate
+                      ? 'border-amber-400 focus:ring-amber-500 bg-amber-50/30'
+                      : 'border-stone-200 focus:ring-emerald-700'
+                  }`}
                 />
+
+                {/* Duplicate Detected Warning & Quick Actions */}
+                {detectedDuplicate && (
+                  <div className="mt-2 p-3 bg-amber-50/90 border border-amber-300 rounded-xl text-xs space-y-2 animate-in fade-in duration-150">
+                    <div className="flex items-start gap-2 text-amber-900">
+                      <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                      <div className="min-w-0 flex-1">
+                        <span className="font-bold">Plant Already in Catalog: </span>
+                        <span>
+                          "{detectedDuplicate.name}" is already available
+                          {detectedDuplicate.addedByUserName
+                            ? ` (contributed by ${detectedDuplicate.addedByUserName})`
+                            : ' in the standard reference catalog'}
+                          .
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center flex-wrap gap-2 pt-0.5">
+                      {onOpenExistingPlant && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            onClose();
+                            onOpenExistingPlant(detectedDuplicate);
+                          }}
+                          className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-[11px] shadow-2xs active:scale-95 transition-all"
+                        >
+                          <Eye className="w-3.5 h-3.5" />
+                          <span>Open Plant Guide</span>
+                        </button>
+                      )}
+
+                      {onAddExistingToGarden && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            onAddExistingToGarden(detectedDuplicate);
+                            onClose();
+                          }}
+                          className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-amber-200 hover:bg-amber-300 text-amber-900 font-bold text-[11px] shadow-2xs active:scale-95 transition-all"
+                        >
+                          {detectedDuplicate.inMyGarden ? (
+                            <>
+                              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-700" />
+                              <span>Already in My Garden</span>
+                            </>
+                          ) : (
+                            <>
+                              <Plus className="w-3.5 h-3.5 text-amber-900 stroke-[2.5]" />
+                              <span>Add to My Garden</span>
+                            </>
+                          )}
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                )}
               </div>
 
               <div>

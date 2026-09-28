@@ -1,7 +1,9 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { Plant, PlantCategory, SunlightType, WaterLevel, HealthScanRecord } from './types/plant';
 import { storageService } from './services/storageService';
-import { firestoreStorageService } from './services/firestoreStorageService';
+import { firestoreStorageService, UserPlantStateDoc } from './services/firestoreStorageService';
+import { INITIAL_PLANTS } from './data/seedPlants';
+import { VERIFIED_PLANT_IMAGES } from './data/plantImages';
 import { useAuth } from './contexts/AuthContext';
 import { LoginScreen } from './components/LoginScreen';
 import { isPlantBloomingMonth, MONTHS } from './utils/gardenHelpers';
@@ -140,38 +142,103 @@ export default function App() {
 
   const currentMonthName = MONTHS[currentMonthIndex - 1]?.name || 'September';
 
-  // Load plants when user changes or on initial load
+  // User private plant state overlay (inMyGarden, isFavorite, lastFertilizedDate, customPhotoUrl, scanHistory)
+  const userPlantStatesRef = useRef<Map<string, UserPlantStateDoc>>(new Map());
+
+  // Real-time listener for shared catalog + user private state overlay
   useEffect(() => {
+    let unsubscribeShared: (() => void) | null = null;
     let isCancelled = false;
 
-    async function loadData() {
+    async function initPlants() {
       setIsLoadingPlants(true);
+
       if (user) {
-        // Authenticated user: Load private garden from Firestore (with automatic migration of pre-existing local data)
-        const userPlants = await firestoreStorageService.loadPlantsForUser(user.uid);
-        if (!isCancelled) {
-          setPlants(userPlants);
-          setIsLoadingPlants(false);
+        // Authenticated: load private state docs from Firestore users/{uid}/userPlants
+        try {
+          const userPlantsSnap = await firestoreStorageService.loadUserPlantStates(user.uid);
+          if (!isCancelled) {
+            userPlantStatesRef.current = userPlantsSnap;
+          }
+          // Trigger background migration of any legacy custom plants (and local storage)
+          firestoreStorageService.migrateLegacyCustomPlants(user.uid, user).catch(() => {});
+        } catch (err) {
+          console.warn('Failed to load private user plant states:', err);
         }
       } else {
-        // Guest or unauthenticated: Load local + admin-approved community shared plants
-        const local = storageService.getPlants();
-        const shared = await firestoreStorageService.getSharedPlants();
-        const localIds = new Set(local.map((p) => p.id));
-        const merged = [...local, ...shared.filter((sp) => !localIds.has(sp.id))];
-        if (!isCancelled) {
-          setPlants(merged);
-          setIsLoadingPlants(false);
-        }
+        userPlantStatesRef.current = new Map();
       }
+
+      // Real-time subscription to shared catalog
+      unsubscribeShared = firestoreStorageService.subscribeToSharedPlants((sharedPlants) => {
+        if (isCancelled) return;
+
+        const sharedIds = new Set(sharedPlants.map((p) => p.id));
+        const filteredSeed = INITIAL_PLANTS.filter((sp) => !sharedIds.has(sp.id));
+        const allReferenceCatalog = [...filteredSeed, ...sharedPlants];
+
+        // If guest, grab local storage overrides
+        const localPlantsMap = !user
+          ? new Map(storageService.getPlants().map((p) => [p.id, p]))
+          : null;
+
+        const merged: Plant[] = allReferenceCatalog.map((basePlant) => {
+          const userState = userPlantStatesRef.current.get(basePlant.id);
+          const verified = VERIFIED_PLANT_IMAGES[basePlant.id];
+          const localOverride = localPlantsMap?.get(basePlant.id);
+
+          const isCreator = Boolean(user && basePlant.addedByUserId && basePlant.addedByUserId === user.uid);
+
+          const inGarden = user
+            ? userState
+              ? Boolean(userState.inMyGarden)
+              : isCreator // Creator owns their added plant by default
+            : localOverride
+            ? Boolean(localOverride.inMyGarden)
+            : false;
+
+          const isFav = user
+            ? Boolean(userState?.isFavorite)
+            : Boolean(localOverride?.isFavorite);
+
+          return {
+            ...basePlant,
+            imageUrl: basePlant.imageUrl || verified?.imageUrl,
+            inMyGarden: inGarden,
+            isFavorite: isFav,
+            lastFertilizedDate: user
+              ? userState?.lastFertilizedDate
+              : localOverride?.lastFertilizedDate,
+            customPhotoUrl: user
+              ? userState?.customPhotoUrl
+              : localOverride?.customPhotoUrl,
+            scanHistory: user
+              ? userState?.scanHistory || []
+              : localOverride?.scanHistory || [],
+          };
+        });
+
+        setPlants(merged);
+        setIsLoadingPlants(false);
+
+        // Update selectedPlantForDetail if currently open
+        setSelectedPlantForDetail((currentSelected) => {
+          if (!currentSelected) return null;
+          const fresh = merged.find((p) => p.id === currentSelected.id);
+          return fresh || null;
+        });
+      });
     }
 
     if (!authLoading) {
-      loadData();
+      initPlants();
     }
 
     return () => {
       isCancelled = true;
+      if (unsubscribeShared) {
+        unsubscribeShared();
+      }
     };
   }, [user, authLoading]);
 
@@ -197,7 +264,7 @@ export default function App() {
     requireAuth(() => {
       setPlantToEdit(null);
       setIsFormModalOpen(true);
-    }, 'Sign in with Google to add custom plant varieties to your private garden.');
+    }, 'Sign in with Google to add plants to the shared community catalog.');
   };
 
   const handleOpenEditModal = (plant: Plant) => {
@@ -209,25 +276,60 @@ export default function App() {
 
   const handleSavePlant = async (savedPlant: Omit<Plant, 'id' | 'createdAt' | 'updatedAt'> | Plant) => {
     if ('id' in savedPlant && savedPlant.id) {
-      // Update existing
-      const updated = storageService.updatePlant(savedPlant as Plant);
-      setPlants((prev) => prev.map((p) => (p.id === updated.id ? updated : p)));
-      if (selectedPlantForDetail?.id === updated.id) {
+      // Update existing plant in shared catalog
+      const existingId = savedPlant.id;
+      const updated = {
+        ...savedPlant,
+        updatedAt: new Date().toISOString(),
+      } as Plant;
+
+      // Optimistic update
+      setPlants((prev) => prev.map((p) => (p.id === existingId ? updated : p)));
+      if (selectedPlantForDetail?.id === existingId) {
         setSelectedPlantForDetail(updated);
       }
+
       if (user) {
-        await firestoreStorageService.syncUserPlantState(user.uid, updated);
+        try {
+          await firestoreStorageService.updateSharedPlant(user, updated);
+        } catch (err) {
+          console.error('Failed to update plant in shared catalog:', err);
+          showToast('Could not save update to shared catalog');
+          return;
+        }
+      } else {
+        storageService.updatePlant(updated);
       }
       showToast(`Updated care guide for ${updated.name}`);
     } else {
-      // Add new
+      // Add new: directly save to shared/common catalog
       if (user) {
-        const created = await firestoreStorageService.addCustomPlant(
+        const result = await firestoreStorageService.addSharedPlant(
           { uid: user.uid, email: user.email, displayName: user.displayName },
-          savedPlant
+          savedPlant,
+          plants
         );
-        setPlants((prev) => [created, ...prev]);
-        showToast(`Added ${created.name} to your garden!`);
+
+        if (!result.success || !result.plant) {
+          if (result.existingPlant) {
+            showToast(`"${result.existingPlant.name}" already exists in the catalog!`);
+            setSelectedPlantForDetail(result.existingPlant);
+          } else {
+            showToast(result.error || 'Failed to add plant');
+          }
+          return;
+        }
+
+        const created = result.plant;
+        userPlantStatesRef.current.set(created.id, {
+          id: created.id,
+          userId: user.uid,
+          inMyGarden: true,
+          updatedAt: new Date().toISOString(),
+        });
+
+        setPlants((prev) => [created, ...prev.filter((p) => p.id !== created.id)]);
+        showToast(`Added ${created.name} to shared catalog and your garden!`);
       } else {
         const created = storageService.addPlant(savedPlant);
         setPlants((prev) => [created, ...prev]);
@@ -239,15 +341,22 @@ export default function App() {
   // Delete plant handler
   const handleDeletePlant = async (id: string) => {
     const target = plants.find((p) => p.id === id);
-    const success = storageService.deletePlant(id);
-    if (success) {
-      setPlants((prev) => prev.filter((p) => p.id !== id));
-      if (selectedPlantForDetail?.id === id) {
-        setSelectedPlantForDetail(null);
+    setPlants((prev) => prev.filter((p) => p.id !== id));
+    if (selectedPlantForDetail?.id === id) {
+      setSelectedPlantForDetail(null);
+    }
+
+    if (user) {
+      try {
+        await firestoreStorageService.deleteSharedPlant(user.uid, id);
+        userPlantStatesRef.current.delete(id);
+        showToast(`Deleted ${target?.name || 'plant'} from shared catalog`);
+      } catch (err) {
+        console.error('Failed to delete plant from shared catalog:', err);
+        showToast('Failed to delete plant from shared catalog');
       }
-      if (user && id.startsWith('custom-')) {
-        await firestoreStorageService.deleteCustomPlant(user.uid, id);
-      }
+    } else {
+      storageService.deletePlant(id);
       showToast(`Deleted ${target?.name || 'plant'} from tracker`);
     }
   };
@@ -280,24 +389,40 @@ export default function App() {
     }
     const target = plants.find((p) => p.id === id);
     requireAuth(async () => {
-      const updated = storageService.toggleInMyGarden(id);
-      if (updated) {
-        setPlants((prev) => prev.map((p) => (p.id === id ? { ...p, inMyGarden: updated.inMyGarden } : p)));
-        if (selectedPlantForDetail?.id === id) {
-          setSelectedPlantForDetail({ ...selectedPlantForDetail, inMyGarden: updated.inMyGarden });
-        }
-        if (user) {
-          const full = plants.find((p) => p.id === id);
-          if (full) {
-            await firestoreStorageService.syncUserPlantState(user.uid, { ...full, inMyGarden: updated.inMyGarden });
-          }
-        }
-        showToast(
-          updated.inMyGarden
-            ? `Added ${updated.name} to My Garden!`
-            : `Removed ${updated.name} from My Garden`
-        );
+      const currentVal = Boolean(target?.inMyGarden);
+      const nextVal = !currentVal;
+
+      setPlants((prev) => prev.map((p) => (p.id === id ? { ...p, inMyGarden: nextVal } : p)));
+      if (selectedPlantForDetail?.id === id) {
+        setSelectedPlantForDetail((prev) => (prev ? { ...prev, inMyGarden: nextVal } : null));
       }
+
+      if (user) {
+        const existingState = userPlantStatesRef.current.get(id);
+        const updatedState: UserPlantStateDoc = {
+          ...(existingState || {
+            id,
+            userId: user.uid,
+            scanHistory: [],
+          }),
+          id,
+          userId: user.uid,
+          inMyGarden: nextVal,
+          updatedAt: new Date().toISOString(),
+        };
+        userPlantStatesRef.current.set(id, updatedState);
+        if (target) {
+          await firestoreStorageService.syncUserPlantState(user.uid, { ...target, inMyGarden: nextVal });
+        }
+      } else {
+        storageService.toggleInMyGarden(id);
+      }
+
+      showToast(
+        nextVal
+          ? `Added ${target?.name || 'plant'} to My Garden!`
+          : `Removed ${target?.name || 'plant'} from My Garden`
+      );
     }, `Sign in with Google to add ${target?.name || 'this plant'} to your garden and track care schedules.`);
   };
 
@@ -1150,10 +1275,17 @@ export default function App() {
       {isFormModalOpen && (
         <PlantFormModal
           initialPlant={plantToEdit}
+          existingPlants={plants}
           onSave={handleSavePlant}
           onClose={() => {
             setIsFormModalOpen(false);
             setPlantToEdit(null);
+          }}
+          onOpenExistingPlant={(existingPlant) => {
+            setSelectedPlantForDetail(existingPlant);
+          }}
+          onAddExistingToGarden={(existingPlant) => {
+            handleToggleInMyGarden(existingPlant.id);
           }}
         />
       )}

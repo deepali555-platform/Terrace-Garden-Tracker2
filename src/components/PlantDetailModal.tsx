@@ -75,6 +75,11 @@ export const PlantDetailModal: React.FC<PlantDetailModalProps> = ({
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const { user } = useAuth();
+  const isEffectivelyLoggedIn = Boolean(user || isLoggedIn);
+  // CRITICAL: "In My Garden" status should ONLY be evaluated and shown based on the currently logged-in user's
+  // actual saved data in the database. It must never default to "In My Garden" or show any garden status for a guest.
+  const isOwned = Boolean(isEffectivelyLoggedIn && plant.inMyGarden);
+
   const isAdmin = Boolean(user?.email && isUserAdmin(user.email));
   const isCreator = Boolean(user?.uid && plant.addedByUserId && plant.addedByUserId === user.uid);
   const isPrePopulated = !plant.addedByUserId;
@@ -282,13 +287,13 @@ export const PlantDetailModal: React.FC<PlantDetailModalProps> = ({
                     type="button"
                     onClick={() => onToggleInMyGarden(plant.id)}
                     className={`inline-flex items-center justify-center gap-1 px-3.5 py-1.5 rounded-full text-xs font-bold transition-all shadow-sm active:scale-95 min-h-[44px] ${
-                      plant.inMyGarden
+                      isOwned
                         ? 'bg-emerald-500 hover:bg-rose-600 text-white border border-emerald-300/60'
                         : 'bg-white hover:bg-emerald-50 text-emerald-950 border border-white/80'
                     }`}
-                    title={plant.inMyGarden ? 'In My Garden (Click to remove)' : 'Click to Add to My Garden'}
+                    title={isOwned ? 'In My Garden (Click to remove)' : 'Click to Add to My Garden'}
                   >
-                    {plant.inMyGarden ? (
+                    {isOwned ? (
                       <>
                         <CheckCircle2 className="w-4 h-4 text-white stroke-[2.5]" />
                         <span>In My Garden</span>
@@ -360,13 +365,13 @@ export const PlantDetailModal: React.FC<PlantDetailModalProps> = ({
                     type="button"
                     onClick={() => onToggleInMyGarden(plant.id)}
                     className={`inline-flex items-center justify-center gap-1 px-3.5 py-1.5 rounded-full text-xs font-bold transition-all shadow-2xs active:scale-95 min-h-[44px] ${
-                      plant.inMyGarden
+                      isOwned
                         ? 'bg-emerald-100 hover:bg-rose-50 text-emerald-900 hover:text-rose-700 border border-emerald-300 hover:border-rose-300'
                         : 'bg-stone-100 hover:bg-emerald-100 text-stone-700 hover:text-emerald-900 border border-stone-300 hover:border-emerald-400'
                     }`}
-                    title={plant.inMyGarden ? 'Currently In My Garden (Click to remove)' : 'Click to Add to My Garden'}
+                    title={isOwned ? 'Currently In My Garden (Click to remove)' : 'Click to Add to My Garden'}
                   >
-                    {plant.inMyGarden ? (
+                    {isOwned ? (
                       <>
                         <CheckCircle2 className="w-4 h-4 text-emerald-700 stroke-[2.5]" />
                         <span>In My Garden</span>
@@ -1005,7 +1010,7 @@ export const PlantDetailModal: React.FC<PlantDetailModalProps> = ({
                     </div>
                   )}
                 </div>
-              ) : !plant.inMyGarden ? (
+              ) : !isOwned ? (
                 <div className="bg-white rounded-3xl border border-stone-200 p-8 sm:p-12 text-center space-y-4 shadow-2xs">
                   <div className="w-14 h-14 rounded-2xl bg-emerald-50 text-emerald-800 flex items-center justify-center mx-auto border border-emerald-200">
                     <Leaf className="w-7 h-7" />

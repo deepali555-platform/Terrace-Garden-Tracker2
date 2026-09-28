@@ -5,15 +5,44 @@ import { VERIFIED_PLANT_IMAGES } from '../data/plantImages';
 
 const STORAGE_KEY = 'terrace_garden_plants_v6';
 
-// Core Indian plants commonly grown on home terraces/balconies by default
-const DEFAULT_GARDEN_PLANT_IDS = new Set([
-  'tulsi',
-  'curry-leaf',
-  'hibiscus',
-  'money-plant',
-  'spider-plant',
-  'desi-rose',
-]);
+/**
+ * Requirement 5: Clear any leftover local storage data related to My Garden status
+ * so guests never inherit stale or test-session garden status.
+ */
+export function clearLegacyGardenLocalStorage(): void {
+  try {
+    const keysToCheck = [
+      'terrace_garden_plants_v6',
+      'terrace_garden_plants_v5',
+      'terrace_garden_plants_v4',
+      'terrace_garden_plants_v3',
+      'terrace_garden_plants_v2',
+      'terrace_garden_plants',
+    ];
+    for (const key of keysToCheck) {
+      const raw = localStorage.getItem(key);
+      if (raw) {
+        try {
+          const list = JSON.parse(raw);
+          if (Array.isArray(list)) {
+            const sanitized = list.map((p: any) => ({
+              ...p,
+              inMyGarden: false,
+            }));
+            localStorage.setItem(key, JSON.stringify(sanitized));
+          }
+        } catch {
+          localStorage.removeItem(key);
+        }
+      }
+    }
+  } catch (e) {
+    // Ignore in non-browser or restricted environments
+  }
+}
+
+// Automatically sanitize on load
+clearLegacyGardenLocalStorage();
 
 function seedInitialPlantsWithDates(): Plant[] {
   const now = new Date();
@@ -26,7 +55,7 @@ function seedInitialPlantsWithDates(): Plant[] {
     return {
       ...plant,
       imageUrl: plant.imageUrl || VERIFIED_PLANT_IMAGES[plant.id]?.imageUrl,
-      inMyGarden: DEFAULT_GARDEN_PLANT_IDS.has(plant.id),
+      inMyGarden: false, // Must default to false; only authenticated user data in DB defines ownership
       lastFertilizedDate: toISODateString(d),
     };
   });
@@ -53,9 +82,8 @@ export const storageService = {
                   d.setDate(d.getDate() - ((idx * 5) % 25 + 2));
                   p.lastFertilizedDate = toISODateString(d);
                 }
-                if (p.inMyGarden === undefined) {
-                  p.inMyGarden = DEFAULT_GARDEN_PLANT_IDS.has(p.id);
-                }
+                // Never default to inMyGarden for guests
+                p.inMyGarden = false;
                 const verified = VERIFIED_PLANT_IMAGES[p.id];
                 if (verified) {
                   p.imageUrl = verified.imageUrl;
@@ -92,16 +120,12 @@ export const storageService = {
           p.imageUrl = verified.imageUrl;
           modified = true;
         }
+        // Guest/unauthenticated local plants must never default to inMyGarden
+        if (p.inMyGarden) {
+          p.inMyGarden = false;
+          modified = true;
+        }
       });
-
-      // Migrate existing plants if they lack inMyGarden property
-      const hasAnyGardenField = parsed.some((p) => p.inMyGarden !== undefined);
-      if (!hasAnyGardenField) {
-        parsed.forEach((p) => {
-          p.inMyGarden = DEFAULT_GARDEN_PLANT_IDS.has(p.id);
-        });
-        modified = true;
-      }
 
       if (!parsed.some((p) => p.id === 'spider-plant')) {
         const spiderPlant = INITIAL_PLANTS.find((p) => p.id === 'spider-plant');
@@ -110,7 +134,7 @@ export const storageService = {
           d.setDate(d.getDate() - 14);
           const enrichedSpider: Plant = {
             ...spiderPlant,
-            inMyGarden: true,
+            inMyGarden: false,
             lastFertilizedDate: toISODateString(d),
           };
           parsed.push(enrichedSpider);
@@ -125,7 +149,7 @@ export const storageService = {
           d.setDate(d.getDate() - 8);
           const enrichedSadabahar: Plant = {
             ...sadabaharPlant,
-            inMyGarden: true,
+            inMyGarden: false,
             imageUrl: '/images/sadabahar.jpg',
             lastFertilizedDate: toISODateString(d),
           };

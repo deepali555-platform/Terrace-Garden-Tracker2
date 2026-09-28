@@ -192,12 +192,13 @@ export default function App() {
 
           const isCreator = Boolean(user && basePlant.addedByUserId && basePlant.addedByUserId === user.uid);
 
+          // CRITICAL: "In My Garden" status should ONLY be evaluated and shown based on the currently
+          // logged-in user's actual saved data in the database. It must never default to "In My Garden"
+          // or show any garden status for a logged-out/guest visitor.
           const inGarden = user
             ? userState
               ? Boolean(userState.inMyGarden)
               : isCreator // Creator owns their added plant by default
-            : localOverride
-            ? Boolean(localOverride.inMyGarden)
             : false;
 
           const isFav = user
@@ -1069,30 +1070,30 @@ export default function App() {
                 </p>
 
                 {/* Action buttons: Single horizontal row, never wrapping, equal width, min-h-[44px] */}
-                <div className="pt-2 flex flex-row items-center gap-1.5 sm:gap-2.5 w-full max-w-xl">
+                <div className="pt-2 flex flex-row flex-nowrap items-center gap-1.5 sm:gap-2.5 w-full max-w-xl">
                   <button
                     type="button"
                     onClick={() => handleSelectTab('my-garden')}
-                    className="flex-1 min-w-0 min-h-[44px] px-1.5 sm:px-3.5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl shadow-xs transition-all active:scale-95 flex items-center justify-center gap-1 sm:gap-1.5 text-[12px] sm:text-[13px] font-bold whitespace-nowrap cursor-pointer"
+                    className="flex-[1_1_0%] min-w-0 h-11 min-h-[44px] px-1.5 sm:px-3 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl shadow-xs transition-all active:scale-95 flex items-center justify-center gap-1 sm:gap-1.5 text-[12.5px] sm:text-[13px] font-bold whitespace-nowrap cursor-pointer"
                   >
                     <Sprout className="w-3.5 h-3.5 text-emerald-200 shrink-0" />
-                    <span>My Garden</span>
+                    <span className="truncate">My Garden</span>
                   </button>
                   <button
                     type="button"
                     onClick={() => handleOpenScanModal()}
-                    className="flex-1 min-w-0 min-h-[44px] px-1.5 sm:px-3.5 py-2 bg-amber-400 hover:bg-amber-300 text-stone-950 rounded-xl shadow-xs transition-all active:scale-95 flex items-center justify-center gap-1 sm:gap-1.5 text-[12px] sm:text-[13px] font-bold whitespace-nowrap cursor-pointer"
+                    className="flex-[1_1_0%] min-w-0 h-11 min-h-[44px] px-1.5 sm:px-3 py-2 bg-amber-400 hover:bg-amber-300 text-stone-950 rounded-xl shadow-xs transition-all active:scale-95 flex items-center justify-center gap-1 sm:gap-1.5 text-[12.5px] sm:text-[13px] font-bold whitespace-nowrap cursor-pointer"
                   >
                     <Camera className="w-3.5 h-3.5 text-stone-900 shrink-0" />
-                    <span>Scan Plant</span>
+                    <span className="truncate">Scan Plant</span>
                   </button>
                   <button
                     type="button"
                     onClick={handleOpenAddModal}
-                    className="flex-1 min-w-0 min-h-[44px] px-1.5 sm:px-3.5 py-2 bg-emerald-800 hover:bg-emerald-700 text-white rounded-xl shadow-xs transition-all border border-emerald-600/50 flex items-center justify-center gap-1 sm:gap-1.5 text-[12px] sm:text-[13px] font-bold whitespace-nowrap cursor-pointer active:scale-95"
+                    className="flex-[1_1_0%] min-w-0 h-11 min-h-[44px] px-1.5 sm:px-3 py-2 bg-emerald-800 hover:bg-emerald-700 text-white rounded-xl shadow-xs transition-all border border-emerald-600/50 flex items-center justify-center gap-1 sm:gap-1.5 text-[12.5px] sm:text-[13px] font-bold whitespace-nowrap cursor-pointer active:scale-95"
                   >
                     <Plus className="w-3.5 h-3.5 stroke-[2.5] shrink-0" />
-                    <span>Add Plant</span>
+                    <span className="truncate">Add Plant</span>
                   </button>
                 </div>
               </div>

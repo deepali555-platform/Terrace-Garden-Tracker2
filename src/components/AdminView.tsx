@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   ShieldCheck,
   Globe,
@@ -15,6 +15,10 @@ import {
   Sun,
   Droplets,
   Calendar,
+  Download,
+  Upload,
+  RotateCcw,
+  Database,
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { isUserAdmin, ADMIN_EMAILS } from '../config/adminConfig';
@@ -42,7 +46,94 @@ export const AdminView: React.FC<AdminViewProps> = ({
   const [statusFilter, setStatusFilter] = useState<SubmissionStatus | 'all'>('all');
   const [processingId, setProcessingId] = useState<string | null>(null);
 
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [showResetConfirm, setShowResetConfirm] = useState(false);
+  const [isPerformingMaintenance, setIsPerformingMaintenance] = useState(false);
+
   const isAdmin = Boolean(user?.email && isUserAdmin(user.email));
+
+  // Admin Database Backup (JSON)
+  const handleAdminBackup = async () => {
+    if (!user || !isAdmin) {
+      onShowToast('Unauthorized: Admin access required.');
+      return;
+    }
+    setIsPerformingMaintenance(true);
+    try {
+      const jsonStr = await firestoreStorageService.adminExportDatabase(user);
+      const blob = new Blob([jsonStr], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `terrace-garden-admin-backup-${new Date().toISOString().slice(0, 10)}.json`;
+      link.click();
+      URL.revokeObjectURL(url);
+      onShowToast('Admin backup (JSON) downloaded successfully.');
+    } catch (err: any) {
+      console.error('Backup failed:', err);
+      onShowToast(err?.message || 'Failed to generate backup.');
+    } finally {
+      setIsPerformingMaintenance(false);
+    }
+  };
+
+  // Admin Database Restore
+  const handleAdminRestore = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!user || !isAdmin) {
+      onShowToast('Unauthorized: Admin access required.');
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = async (event) => {
+      const content = event.target?.result as string;
+      setIsPerformingMaintenance(true);
+      try {
+        const res = await firestoreStorageService.adminRestoreDatabase(user, content);
+        if (res.success) {
+          onShowToast(`Successfully restored ${res.count || 0} plants to shared catalog!`);
+          if (onSharedCatalogUpdated) {
+            onSharedCatalogUpdated();
+          }
+          loadSubmissions();
+        } else {
+          alert(res.error || 'Failed to restore backup file.');
+        }
+      } catch (err: any) {
+        console.error('Restore error:', err);
+        alert(err?.message || 'Failed to restore backup file.');
+      } finally {
+        setIsPerformingMaintenance(false);
+      }
+    };
+    reader.readAsText(file);
+    e.target.value = '';
+  };
+
+  // Admin Reset Database
+  const handleAdminReset = async () => {
+    if (!user || !isAdmin) {
+      onShowToast('Unauthorized: Admin access required.');
+      return;
+    }
+    setIsPerformingMaintenance(true);
+    try {
+      await firestoreStorageService.adminResetDatabase(user);
+      setShowResetConfirm(false);
+      onShowToast('Database reset to clean 21 default Indian terrace species.');
+      if (onSharedCatalogUpdated) {
+        onSharedCatalogUpdated();
+      }
+      loadSubmissions();
+    } catch (err: any) {
+      console.error('Reset error:', err);
+      onShowToast(err?.message || 'Failed to reset database.');
+    } finally {
+      setIsPerformingMaintenance(false);
+    }
+  };
 
   const loadSubmissions = async () => {
     if (!isAdmin) return;
@@ -513,6 +604,108 @@ export const AdminView: React.FC<AdminViewProps> = ({
           })}
         </div>
       )}
+
+      {/* ============================================================ */}
+      {/* SENSITIVE DATABASE MAINTENANCE & BACKUPS (ADMIN-ONLY)       */}
+      {/* ============================================================ */}
+      <div className="bg-white rounded-3xl border border-stone-200/90 p-5 sm:p-7 shadow-xs space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-stone-100">
+          <div className="flex items-center gap-2.5">
+            <div className="w-10 h-10 rounded-2xl bg-amber-50 text-amber-800 flex items-center justify-center border border-amber-200 shadow-2xs">
+              <Database className="w-5 h-5 text-amber-700" />
+            </div>
+            <div>
+              <h3 className="text-base font-bold text-stone-900">
+                Database Maintenance & System Backups
+              </h3>
+              <p className="text-xs text-stone-500">
+                Restricted to verified app owner ({user?.email || ADMIN_EMAILS[0]}). Invisible to regular users.
+              </p>
+            </div>
+          </div>
+          <span className="self-start sm:self-auto text-[11px] font-bold text-amber-900 bg-amber-100/70 border border-amber-300/80 px-2.5 py-1 rounded-full">
+            Admin Operations Only
+          </span>
+        </div>
+
+        <p className="text-xs text-stone-600 leading-relaxed">
+          Manage full catalog backups, restore snapshots, or reset community additions back to the initial 21 authentic Indian terrace plants. All actions are authenticated and recorded in the audit log.
+        </p>
+
+        <div className="pt-2 flex flex-wrap items-center gap-3">
+          {/* 1. Backup Button */}
+          <button
+            type="button"
+            onClick={handleAdminBackup}
+            disabled={isPerformingMaintenance}
+            className="min-h-[44px] inline-flex items-center gap-2 px-4 py-2.5 bg-emerald-800 hover:bg-emerald-900 text-white rounded-xl text-xs font-bold transition-all shadow-xs active:scale-95 disabled:opacity-50 cursor-pointer"
+            title="Download full database backup as JSON"
+          >
+            <Download className="w-4 h-4 text-emerald-200" />
+            <span>Backup Database (JSON)</span>
+          </button>
+
+          {/* 2. Restore Button */}
+          <label className="min-h-[44px] inline-flex items-center gap-2 px-4 py-2.5 bg-white border border-stone-300 hover:bg-stone-50 text-stone-800 rounded-xl text-xs font-bold transition-all shadow-2xs active:scale-95 cursor-pointer">
+            <Upload className="w-4 h-4 text-stone-600" />
+            <span>Restore Backup</span>
+            <input
+              type="file"
+              ref={fileInputRef}
+              accept=".json"
+              disabled={isPerformingMaintenance}
+              onChange={handleAdminRestore}
+              className="hidden"
+            />
+          </label>
+
+          {/* 3. Reset Database Button */}
+          <button
+            type="button"
+            onClick={() => setShowResetConfirm(true)}
+            disabled={isPerformingMaintenance}
+            className="min-h-[44px] inline-flex items-center gap-2 px-4 py-2.5 bg-rose-50 hover:bg-rose-100 border border-rose-200 text-rose-800 rounded-xl text-xs font-bold transition-all shadow-2xs active:scale-95 disabled:opacity-50 cursor-pointer"
+            title="Reset database to default 21 Indian terrace plants"
+          >
+            <RotateCcw className="w-4 h-4 text-rose-600" />
+            <span>Reset Database</span>
+          </button>
+        </div>
+
+        {/* Reset Confirmation Dialog */}
+        {showResetConfirm && (
+          <div className="mt-4 p-4 bg-rose-50 border border-rose-200 rounded-2xl space-y-3 animate-in fade-in duration-150">
+            <div className="flex items-start gap-3">
+              <AlertTriangle className="w-5 h-5 text-rose-700 shrink-0 mt-0.5" />
+              <div className="space-y-1">
+                <h4 className="text-xs font-bold text-rose-950">
+                  Confirm Database Reset
+                </h4>
+                <p className="text-xs text-rose-900/90 leading-relaxed">
+                  Are you sure you want to reset the database? This will clear all community additions from the shared catalog and restore the default 21 authentic Indian terrace plants.
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2.5 justify-end pt-1">
+              <button
+                type="button"
+                onClick={() => setShowResetConfirm(false)}
+                className="min-h-[38px] px-3.5 py-1.5 text-xs font-bold text-stone-600 hover:text-stone-900 bg-white border border-stone-200 rounded-xl transition-colors cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleAdminReset}
+                disabled={isPerformingMaintenance}
+                className="min-h-[38px] px-4 py-1.5 text-xs font-bold text-white bg-rose-700 hover:bg-rose-800 rounded-xl shadow-xs transition-all active:scale-95 disabled:opacity-50 cursor-pointer"
+              >
+                {isPerformingMaintenance ? 'Resetting...' : 'Yes, Reset Database'}
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 };

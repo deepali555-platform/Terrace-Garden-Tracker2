@@ -63,5 +63,14 @@ service cloud.firestore {
         resource.data.addedByUserId == request.auth.uid
       );
     }
+
+    // System Backups and Database Maintenance - STRICTLY restricted to Admin
+    match /systemBackups/{backupId} {
+      allow read, write: if isAdmin();
+    }
+
+    match /systemSettings/{settingId} {
+      allow read, write: if isAdmin();
+    }
   }
 }

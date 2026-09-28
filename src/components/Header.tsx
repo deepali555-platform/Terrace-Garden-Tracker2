@@ -13,7 +13,6 @@ interface HeaderProps {
   gardenPlantCount?: number;
   totalPlantCount?: number;
   isLoadingPlants?: boolean;
-  onResetDefaults?: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -26,7 +25,6 @@ export const Header: React.FC<HeaderProps> = ({
   gardenPlantCount = 0,
   totalPlantCount = 0,
   isLoadingPlants = false,
-  onResetDefaults,
 }) => {
   const { user, signOut, isGuest } = useAuth();
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);

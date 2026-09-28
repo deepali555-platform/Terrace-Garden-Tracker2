@@ -24,9 +24,6 @@ import { isUserAdmin } from './config/adminConfig';
 import {
   Sprout,
   Plus,
-  Download,
-  Upload,
-  RotateCcw,
   CheckCircle2,
   Calendar,
   Stethoscope,
@@ -135,11 +132,9 @@ export default function App() {
   const [isFormModalOpen, setIsFormModalOpen] = useState(false);
   const [plantToEdit, setPlantToEdit] = useState<Plant | null>(null);
   const [preselectedDiagnosisPlantId, setPreselectedDiagnosisPlantId] = useState<string | null>(null);
-  const [showResetConfirm, setShowResetConfirm] = useState(false);
   const [isScanModalOpen, setIsScanModalOpen] = useState(false);
   const [scanModalPlant, setScanModalPlant] = useState<Plant | null>(null);
 
-  const fileInputRef = useRef<HTMLInputElement>(null);
   const resultsGridRef = useRef<HTMLDivElement>(null);
   const gardenResultsGridRef = useRef<HTMLDivElement>(null);
   const [highlightedPlantId, setHighlightedPlantId] = useState<string | null>(null);
@@ -461,47 +456,6 @@ export default function App() {
     }, `Sign in with Google to customize photos for ${target?.name || 'this plant'}.`);
   };
 
-  // Reset to default Indian seed plants
-  const handleResetDefaults = () => {
-    const defaults = storageService.resetToDefaults();
-    setPlants(defaults);
-    setSelectedPlantForDetail(null);
-    setShowResetConfirm(false);
-    showToast('Reset plant list to 21 authentic Indian terrace species!');
-  };
-
-  // Export JSON backup
-  const handleExportJson = () => {
-    const jsonStr = storageService.exportToJson();
-    const blob = new Blob([jsonStr], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `terrace-garden-backup-${new Date().toISOString().slice(0, 10)}.json`;
-    link.click();
-    URL.revokeObjectURL(url);
-    showToast('Garden database downloaded as JSON backup.');
-  };
-
-  // Import JSON backup
-  const handleImportJson = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      const content = event.target?.result as string;
-      const res = storageService.importFromJson(content);
-      if (res.success) {
-        setPlants(storageService.getPlants());
-        showToast(`Successfully imported ${res.count} plants from backup!`);
-      } else {
-        alert(res.error || 'Failed to import backup file.');
-      }
-    };
-    reader.readAsText(file);
-    e.target.value = '';
-  };
-
   // Open Plant Health Scanner Modal
   const handleOpenScanModal = (plant?: Plant) => {
     requireAuth(() => {
@@ -783,7 +737,6 @@ export default function App() {
         gardenPlantCount={ownedPlants.length}
         totalPlantCount={totalCatalogCount ?? undefined}
         isLoadingPlants={isLoadingPlants}
-        onResetDefaults={() => setShowResetConfirm(true)}
       />
 
       {/* Toast Notification Banner */}
@@ -1169,45 +1122,13 @@ export default function App() {
               )}
             </div>
 
-            {/* Footer Utilities: Backup, Export, Reset */}
+            {/* Clean App Footer */}
             <div className="pt-6 border-t border-stone-200/70 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-stone-500">
               <div className="flex items-center gap-2">
-                <span>Terrace Garden Tracker · Offline local storage</span>
+                <span>Terrace Garden Tracker · Balcony & Terrace Plant Care</span>
               </div>
-
-              <div className="flex items-center flex-wrap gap-2 w-full sm:w-auto">
-                {/* Export Backup */}
-                <button
-                  onClick={handleExportJson}
-                  className="min-h-[44px] flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-3.5 py-2 bg-white border border-stone-200 hover:bg-stone-50 rounded-xl text-stone-700 transition-colors active:scale-95"
-                  title="Download garden backup file"
-                >
-                  <Download className="w-4 h-4 text-stone-500" />
-                  <span>Backup (JSON)</span>
-                </button>
-
-                {/* Import Backup */}
-                <label className="min-h-[44px] flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-3.5 py-2 bg-white border border-stone-200 hover:bg-stone-50 rounded-xl text-stone-700 transition-colors cursor-pointer active:scale-95">
-                  <Upload className="w-4 h-4 text-stone-500" />
-                  <span>Restore</span>
-                  <input
-                    type="file"
-                    ref={fileInputRef}
-                    accept=".json"
-                    onChange={handleImportJson}
-                    className="hidden"
-                  />
-                </label>
-
-                {/* Reset to Default 21 Indian Plants */}
-                <button
-                  onClick={() => setShowResetConfirm(true)}
-                  className="min-h-[44px] flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-3.5 py-2 bg-white border border-stone-200 hover:bg-stone-50 rounded-xl text-stone-700 transition-colors active:scale-95"
-                  title="Reset to 21 default Indian plants"
-                >
-                  <RotateCcw className="w-4 h-4 text-stone-500" />
-                  <span>Reset Database</span>
-                </button>
+              <div className="text-stone-400 text-[11px]">
+                Authentic Indian Balcony & Terrace Guide
               </div>
             </div>
           </div>
@@ -1328,39 +1249,6 @@ export default function App() {
         }}
         onScanSaved={handleSaveScanRecord}
       />
-
-      {/* Reset Confirmation Dialog */}
-      {showResetConfirm && (
-        <div className="fixed inset-0 z-50 bg-stone-900/60 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl p-6 max-w-md w-full shadow-2xl border border-stone-200 space-y-4">
-            <div className="w-10 h-10 rounded-2xl bg-amber-50 text-amber-700 flex items-center justify-center">
-              <RotateCcw className="w-5 h-5" />
-            </div>
-            <div>
-              <h3 className="text-lg font-bold text-stone-900">
-                Reset Plant Database?
-              </h3>
-              <p className="text-xs text-stone-600 mt-1 leading-relaxed">
-                This will reset your tracker to the pre-populated set of 20 authentic Indian terrace plants (Tulsi, Desi Rose, Curry Leaf, Hibiscus, Marigold, Tomato, Mogra, etc.) with all 12 care fields and home remedies. Any custom plants you added will be replaced.
-              </p>
-            </div>
-            <div className="flex items-center justify-end gap-2 pt-2">
-              <button
-                onClick={() => setShowResetConfirm(false)}
-                className="px-4 py-2 text-xs font-medium text-stone-700 bg-stone-100 hover:bg-stone-200 rounded-xl"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleResetDefaults}
-                className="px-4 py-2 text-xs font-semibold text-white bg-emerald-900 hover:bg-emerald-950 rounded-xl shadow-xs"
-              >
-                Confirm Reset
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Login Modal for Account Actions */}
       {showLoginModal && (

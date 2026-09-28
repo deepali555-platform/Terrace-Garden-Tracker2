@@ -15,6 +15,7 @@ import { UserSubmittedPlantRecord } from '../types/admin';
 import { INITIAL_PLANTS } from '../data/seedPlants';
 import { VERIFIED_PLANT_IMAGES } from '../data/plantImages';
 import { storageService } from './storageService';
+import { isUserAdmin } from '../config/adminConfig';
 
 export interface UserPlantStateDoc {
   id: string;
@@ -654,5 +655,131 @@ export const firestoreStorageService = {
         { merge: true }
       );
     }
+  },
+
+  /**
+   * Admin-only operation: Exports a complete snapshot of shared catalog and submission data.
+   * Backend check: Rejects if the user's email is not an authorized administrator.
+   */
+  async adminExportDatabase(user: { email?: string | null }): Promise<string> {
+    if (!isUserAdmin(user?.email)) {
+      throw new Error('Unauthorized: Only the verified app administrator can export database backups.');
+    }
+
+    const [sharedPlants, submissionsSnap] = await Promise.all([
+      this.getSharedPlants(),
+      getDocs(collection(db, 'userSubmittedPlants')),
+    ]);
+
+    const submissions: any[] = [];
+    submissionsSnap.forEach((d) => submissions.push({ id: d.id, ...d.data() }));
+
+    const backupPayload = {
+      exportVersion: 2,
+      exportTimestamp: new Date().toISOString(),
+      exportedBy: user.email,
+      databaseId: 'terrace-garden-shared-catalog',
+      sharedPlantsCount: sharedPlants.length,
+      sharedPlants,
+      submissionsCount: submissions.length,
+      submissions,
+    };
+
+    // Log the backup operation to systemBackups collection (protected by Firestore rules)
+    try {
+      const backupId = `backup-${Date.now()}`;
+      await setDoc(doc(db, 'systemBackups', backupId), {
+        backupId,
+        action: 'export',
+        timestamp: new Date().toISOString(),
+        adminEmail: user.email,
+        itemCount: sharedPlants.length,
+      });
+    } catch (e) {
+      console.warn('Backup audit log skipped:', e);
+    }
+
+    return JSON.stringify(backupPayload, null, 2);
+  },
+
+  /**
+   * Admin-only operation: Restores shared catalog data from an admin JSON backup.
+   * Backend check: Rejects if the user's email is not an authorized administrator.
+   */
+  async adminRestoreDatabase(
+    user: { email?: string | null },
+    backupJson: string
+  ): Promise<{ success: boolean; count?: number; error?: string }> {
+    if (!isUserAdmin(user?.email)) {
+      throw new Error('Unauthorized: Only the verified app administrator can restore the database.');
+    }
+
+    try {
+      const parsed = JSON.parse(backupJson);
+      let plantsToRestore: Plant[] = [];
+
+      if (Array.isArray(parsed)) {
+        plantsToRestore = parsed;
+      } else if (parsed && Array.isArray(parsed.sharedPlants)) {
+        plantsToRestore = parsed.sharedPlants;
+      } else {
+        return { success: false, error: 'Invalid backup file format: missing plant records.' };
+      }
+
+      // Restore each plant into sharedPlants collection
+      let restoredCount = 0;
+      for (const plant of plantsToRestore) {
+        if (!plant || !plant.id || !plant.name) continue;
+        await setDoc(doc(db, 'sharedPlants', plant.id), {
+          ...plant,
+          isSharedCatalog: true,
+          updatedAt: new Date().toISOString(),
+        });
+        restoredCount++;
+      }
+
+      // Log the restore operation to systemBackups collection (protected by Firestore rules)
+      const restoreId = `restore-${Date.now()}`;
+      await setDoc(doc(db, 'systemBackups', restoreId), {
+        restoreId,
+        action: 'restore',
+        timestamp: new Date().toISOString(),
+        adminEmail: user.email,
+        restoredCount,
+      });
+
+      return { success: true, count: restoredCount };
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Failed to parse or restore backup';
+      return { success: false, error: msg };
+    }
+  },
+
+  /**
+   * Admin-only operation: Resets the shared catalog in Firestore to default seed plants.
+   * Backend check: Rejects if the user's email is not an authorized administrator.
+   */
+  async adminResetDatabase(user: { email?: string | null }): Promise<void> {
+    if (!isUserAdmin(user?.email)) {
+      throw new Error('Unauthorized: Only the verified app administrator can reset the catalog database.');
+    }
+
+    // 1. Delete all user-added plants in Firestore sharedPlants collection
+    const sharedSnap = await getDocs(collection(db, 'sharedPlants'));
+    const deletePromises = sharedSnap.docs.map((d) => deleteDoc(d.ref));
+    await Promise.all(deletePromises);
+
+    // 2. Log reset in systemBackups audit log (protected by Firestore rules)
+    const resetId = `reset-${Date.now()}`;
+    await setDoc(doc(db, 'systemBackups', resetId), {
+      resetId,
+      action: 'reset_to_defaults',
+      timestamp: new Date().toISOString(),
+      adminEmail: user.email,
+      clearedSharedPlantsCount: sharedSnap.size,
+    });
+
+    // 3. Reset local storage seed data as well
+    storageService.resetToDefaults();
   },
 };

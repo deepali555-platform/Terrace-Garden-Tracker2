@@ -1,9 +1,10 @@
 import React from 'react';
 import { Plant } from '../types/plant';
 import { PlantImage } from './PlantImage';
-import { Sun, Droplets, Flower2, Heart, Leaf, AlertTriangle, CheckCircle2, Plus } from 'lucide-react';
+import { Sun, Droplets, Flower2, Heart, Leaf, AlertTriangle, CheckCircle2, Plus, User as UserIcon } from 'lucide-react';
 import { isPlantBloomingMonth, getPlantCategoryAccent } from '../utils/gardenHelpers';
 import { calculateFertilizerStatus } from '../utils/fertilizerHelpers';
+import { useAuth } from '../contexts/AuthContext';
 
 interface PlantCardProps {
   plant: Plant;
@@ -22,10 +23,12 @@ export const PlantCard: React.FC<PlantCardProps> = ({
   onToggleGarden,
   isHighlighted = false,
 }) => {
+  const { user } = useAuth();
   const isBloomingNow = isPlantBloomingMonth(plant, currentMonthIndex);
   const accent = getPlantCategoryAccent(plant.category);
   const fertilizerStatus = calculateFertilizerStatus(plant);
-  const isOwned = Boolean(plant.inMyGarden);
+  // Strictly evaluate isOwned ONLY for authenticated users
+  const isOwned = Boolean(user && plant.inMyGarden);
 
   return (
     <div
@@ -106,13 +109,18 @@ export const PlantCard: React.FC<PlantCardProps> = ({
           </div>
 
           {/* Small category tag/badge below the name */}
-          <div className="mt-1 flex items-center">
+          <div className="mt-1 flex items-center gap-1.5 flex-wrap">
             <span
               className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold border ${accent.pillBadge}`}
             >
               <Leaf className="w-2.5 h-2.5 shrink-0" />
               <span className="truncate">{plant.category}</span>
             </span>
+            {plant.addedByUserName && (
+              <span className="text-[10px] text-stone-500 font-medium truncate">
+                by {plant.addedByUserName}
+              </span>
+            )}
           </div>
         </div>
       </div>
@@ -131,6 +139,13 @@ export const PlantCard: React.FC<PlantCardProps> = ({
                 <Leaf className="w-3 h-3" />
                 <span>{plant.category}</span>
               </span>
+
+              {plant.addedByUserName && (
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-stone-100 text-stone-600 border border-stone-200/80 shrink-0">
+                  <UserIcon className="w-2.5 h-2.5 text-stone-400" />
+                  <span>Added by {plant.addedByUserName}</span>
+                </span>
+              )}
 
               {/* In My Garden Toggle Button */}
               {onToggleGarden && (

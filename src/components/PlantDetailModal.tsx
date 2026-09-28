@@ -90,6 +90,21 @@ export const PlantDetailModal: React.FC<PlantDetailModalProps> = ({
   const fertilizerSchedule = calculateFertilizerStatus(plant);
 
   const handleQuickMarkFertilized = () => {
+    if (!isEffectivelyLoggedIn && onRequireAuth) {
+      onRequireAuth(
+        () => {
+          if (onMarkFertilized) {
+            onMarkFertilized(plant.id, toISODateString(new Date()));
+            setJustMarkedFertilized(true);
+            setTimeout(() => {
+              setJustMarkedFertilized(false);
+            }, 2000);
+          }
+        },
+        `Sign in with Google to log fertilizer dates and track feeding schedules for ${plant.name}.`
+      );
+      return;
+    }
     if (onMarkFertilized) {
       onMarkFertilized(plant.id, toISODateString(new Date()));
       setJustMarkedFertilized(true);
@@ -674,7 +689,7 @@ export const PlantDetailModal: React.FC<PlantDetailModalProps> = ({
                         <span className="text-xs font-bold uppercase tracking-wider text-emerald-900">
                           5. Fertilizer & Feed
                         </span>
-                        {fertilizerSchedule.isOverdue && (
+                        {isOwned && fertilizerSchedule.isOverdue && (
                           <span className="text-[10px] font-bold text-rose-800 bg-rose-100 px-2 py-0.5 rounded-full border border-rose-200">
                             Feed Overdue
                           </span>
@@ -692,53 +707,71 @@ export const PlantDetailModal: React.FC<PlantDetailModalProps> = ({
                     </div>
                   </div>
 
-                  {/* Fertilizer Schedule Tracker Box */}
-                  <div className="mt-1 pt-2.5 border-t border-emerald-100/70 bg-emerald-50/50 p-3 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                    <div className="text-xs">
-                      <div className="text-stone-500 text-[11px]">
-                        Last fed:{' '}
-                        <strong className="text-stone-700">
-                          {formatReadableDate(plant.lastFertilizedDate)}
-                        </strong>
+                  {/* Fertilizer Schedule Tracker Box: Only active when plant is in user's garden */}
+                  {isOwned ? (
+                    <div className="mt-1 pt-2.5 border-t border-emerald-100/70 bg-emerald-50/50 p-3 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                      <div className="text-xs">
+                        <div className="text-stone-500 text-[11px]">
+                          Last fed:{' '}
+                          <strong className="text-stone-700">
+                            {formatReadableDate(plant.lastFertilizedDate)}
+                          </strong>
+                        </div>
+                        <div className="text-emerald-950 font-bold mt-0.5 flex items-center flex-wrap gap-1.5">
+                          <span>Next due: {formatReadableDate(fertilizerSchedule.nextDueDate)}</span>
+                          <span
+                            className={`text-[10px] px-2 py-0.2 rounded-md ${
+                              fertilizerSchedule.isOverdue
+                                ? 'bg-rose-200 text-rose-900'
+                                : 'bg-emerald-200 text-emerald-900'
+                            }`}
+                          >
+                            {fertilizerSchedule.statusLabel}
+                          </span>
+                        </div>
                       </div>
-                      <div className="text-emerald-950 font-bold mt-0.5 flex items-center flex-wrap gap-1.5">
-                        <span>Next due: {formatReadableDate(fertilizerSchedule.nextDueDate)}</span>
-                        <span
-                          className={`text-[10px] px-2 py-0.2 rounded-md ${
-                            fertilizerSchedule.isOverdue
-                              ? 'bg-rose-200 text-rose-900'
-                              : 'bg-emerald-200 text-emerald-900'
+
+                      {onMarkFertilized && (
+                        <button
+                          type="button"
+                          onClick={handleQuickMarkFertilized}
+                          className={`w-full sm:w-auto min-h-[44px] justify-center shrink-0 px-4 py-2 rounded-xl text-xs font-bold transition-all shadow-xs active:scale-95 flex items-center gap-1.5 ${
+                            justMarkedFertilized
+                              ? 'bg-emerald-600 text-white'
+                              : 'bg-emerald-800 hover:bg-emerald-900 text-white'
                           }`}
                         >
-                          {fertilizerSchedule.statusLabel}
-                        </span>
-                      </div>
+                          {justMarkedFertilized ? (
+                            <>
+                              <CheckCircle2 className="w-4 h-4 text-emerald-200" />
+                              <span>Marked!</span>
+                            </>
+                          ) : (
+                            <>
+                              <RotateCw className="w-4 h-4 text-emerald-200" />
+                              <span>Fed Today</span>
+                            </>
+                          )}
+                        </button>
+                      )}
                     </div>
-
-                    {onMarkFertilized && (
-                      <button
-                        type="button"
-                        onClick={handleQuickMarkFertilized}
-                        className={`w-full sm:w-auto min-h-[44px] justify-center shrink-0 px-4 py-2 rounded-xl text-xs font-bold transition-all shadow-xs active:scale-95 flex items-center gap-1.5 ${
-                          justMarkedFertilized
-                            ? 'bg-emerald-600 text-white'
-                            : 'bg-emerald-800 hover:bg-emerald-900 text-white'
-                        }`}
-                      >
-                        {justMarkedFertilized ? (
-                          <>
-                            <CheckCircle2 className="w-4 h-4 text-emerald-200" />
-                            <span>Marked!</span>
-                          </>
-                        ) : (
-                          <>
-                            <RotateCw className="w-4 h-4 text-emerald-200" />
-                            <span>Fed Today</span>
-                          </>
-                        )}
-                      </button>
-                    )}
-                  </div>
+                  ) : (
+                    <div className="mt-1 pt-2.5 border-t border-emerald-100/70 bg-stone-50/80 p-3 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 text-xs">
+                      <p className="text-stone-600 leading-relaxed text-[11px] sm:text-xs">
+                        Add {plant.name} to <strong>My Garden</strong> to track customized feeding dates and overdue notifications.
+                      </p>
+                      {onToggleInMyGarden && (
+                        <button
+                          type="button"
+                          onClick={() => onToggleInMyGarden(plant.id)}
+                          className="min-h-[40px] px-3.5 py-1.5 bg-emerald-800 hover:bg-emerald-900 text-white rounded-xl font-bold text-xs shrink-0 active:scale-95 transition-all shadow-2xs flex items-center justify-center gap-1"
+                        >
+                          <Plus className="w-3.5 h-3.5 stroke-[2.5]" />
+                          <span>Add to My Garden</span>
+                        </button>
+                      )}
+                    </div>
+                  )}
                 </div>
 
                 {/* Field 9: Pot Size Required */}

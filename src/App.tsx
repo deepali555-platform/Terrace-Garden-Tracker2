@@ -75,6 +75,14 @@ export default function App() {
     }
   }, [user, pendingAction]);
 
+  // When user logs out, redirect to 'home' if currently on a private tab
+  useEffect(() => {
+    if (!user && !authLoading && currentTab !== 'home') {
+      setCurrentTab('home');
+      setSelectedPlantForDetail(null);
+    }
+  }, [user, authLoading, currentTab]);
+
   const handleSelectTab = (tab: 'my-garden' | 'home' | 'reminders' | 'diagnosis' | 'fertilizer' | 'admin') => {
     if (tab === 'home') {
       setCurrentTab('home');
@@ -180,45 +188,31 @@ export default function App() {
           ...sharedPlants,
         ]);
 
-        // If guest, grab local storage overrides
-        const localPlantsMap = !user
-          ? new Map(storageService.getPlants().map((p) => [p.id, p]))
-          : null;
-
         const merged: Plant[] = uniqueReferenceCatalog.map((basePlant) => {
           const userState = userPlantStatesRef.current.get(basePlant.id);
           const verified = VERIFIED_PLANT_IMAGES[basePlant.id];
-          const localOverride = localPlantsMap?.get(basePlant.id);
 
           const isCreator = Boolean(user && basePlant.addedByUserId && basePlant.addedByUserId === user.uid);
 
-          // CRITICAL: "In My Garden" status should ONLY be evaluated and shown based on the currently
-          // logged-in user's actual saved data in the database. It must never default to "In My Garden"
-          // or show any garden status for a logged-out/guest visitor.
+          // CRITICAL: "In My Garden" status, favorites, fertilizer dates, and scan history
+          // are strictly evaluated from the authenticated user's private records in Firestore.
+          // Guests have NO personal garden status, NO private fertilizer schedule, and NO private scan logs.
           const inGarden = user
             ? userState
               ? Boolean(userState.inMyGarden)
               : isCreator // Creator owns their added plant by default
             : false;
 
-          const isFav = user
-            ? Boolean(userState?.isFavorite)
-            : Boolean(localOverride?.isFavorite);
+          const isFav = user ? Boolean(userState?.isFavorite) : false;
 
           return {
             ...basePlant,
             imageUrl: basePlant.imageUrl || verified?.imageUrl,
             inMyGarden: inGarden,
             isFavorite: isFav,
-            lastFertilizedDate: user
-              ? userState?.lastFertilizedDate
-              : localOverride?.lastFertilizedDate,
-            customPhotoUrl: user
-              ? userState?.customPhotoUrl
-              : localOverride?.customPhotoUrl,
-            scanHistory: user
-              ? userState?.scanHistory || []
-              : localOverride?.scanHistory || [],
+            lastFertilizedDate: user ? userState?.lastFertilizedDate : undefined,
+            customPhotoUrl: user ? userState?.customPhotoUrl : undefined,
+            scanHistory: user ? userState?.scanHistory || [] : [],
           };
         });
 

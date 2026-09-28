@@ -28,6 +28,10 @@ export function clearLegacyGardenLocalStorage(): void {
             const sanitized = list.map((p: any) => ({
               ...p,
               inMyGarden: false,
+              isFavorite: false,
+              lastFertilizedDate: undefined,
+              scanHistory: [],
+              customPhotoUrl: undefined,
             }));
             localStorage.setItem(key, JSON.stringify(sanitized));
           }

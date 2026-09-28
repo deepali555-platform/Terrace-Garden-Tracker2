@@ -9,6 +9,7 @@ import {
 } from 'firebase/auth';
 import { doc, setDoc } from 'firebase/firestore';
 import { auth, googleProvider, db } from '../firebase';
+import { sanitizeForFirestore } from '../services/firestoreStorageService';
 
 interface AuthContextType {
   user: User | null;
@@ -47,13 +48,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           const userRef = doc(db, 'users', currentUser.uid);
           await setDoc(
             userRef,
-            {
+            sanitizeForFirestore({
               uid: currentUser.uid,
               email: currentUser.email || '',
               displayName: currentUser.displayName || 'Terrace Gardener',
               photoURL: currentUser.photoURL || '',
               lastLoginAt: new Date().toISOString(),
-            },
+            }),
             { merge: true }
           );
         } catch (err) {

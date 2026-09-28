@@ -29,6 +29,45 @@ export interface UserPlantStateDoc {
 }
 
 /**
+ * Recursively strips all `undefined` values from objects and arrays so Firestore never throws
+ * "Unsupported field value: undefined" errors.
+ * - Keys with undefined values are omitted entirely.
+ * - Undefined elements in arrays are filtered out.
+ * - Nested objects, maps, and arrays are recursively processed.
+ * - Native Date objects, nulls, and primitives are preserved as-is.
+ */
+export function sanitizeForFirestore<T>(data: T): T {
+  if (data === undefined) {
+    return null as unknown as T;
+  }
+  if (data === null || typeof data !== 'object') {
+    return data;
+  }
+
+  // Filter and map arrays
+  if (Array.isArray(data)) {
+    return data
+      .filter((item) => item !== undefined)
+      .map((item) => sanitizeForFirestore(item)) as unknown as T;
+  }
+
+  // Preserve native Date instances
+  if (data instanceof Date) {
+    return data;
+  }
+
+  // Handle plain objects: omit keys where value is undefined
+  const sanitized: Record<string, any> = {};
+  for (const [key, value] of Object.entries(data as Record<string, any>)) {
+    if (value === undefined) {
+      continue;
+    }
+    sanitized[key] = sanitizeForFirestore(value);
+  }
+  return sanitized as T;
+}
+
+/**
  * Normalizes plant name for strict case-insensitive and whitespace-insensitive duplicate detection.
  * e.g. "  Holy   Basil  " -> "holy basil"
  */
@@ -198,24 +237,27 @@ export const firestoreStorageService = {
               updatedAt: new Date().toISOString(),
             };
 
-            await setDoc(doc(db, 'sharedPlants', cp.id), {
-              ...sharedDoc,
-              inMyGarden: false,
-            });
+            await setDoc(
+              doc(db, 'sharedPlants', cp.id),
+              sanitizeForFirestore({
+                ...sharedDoc,
+                inMyGarden: false,
+              })
+            );
 
             // Keep user's private ownership state in userPlants
             await setDoc(
               doc(db, 'users', userId, 'userPlants', cp.id),
-              {
+              sanitizeForFirestore({
                 id: cp.id,
                 userId,
                 inMyGarden: true,
                 isFavorite: Boolean(cp.isFavorite),
-                lastFertilizedDate: cp.lastFertilizedDate || undefined,
-                customPhotoUrl: cp.customPhotoUrl || undefined,
+                ...(cp.lastFertilizedDate ? { lastFertilizedDate: cp.lastFertilizedDate } : {}),
+                ...(cp.customPhotoUrl ? { customPhotoUrl: cp.customPhotoUrl } : {}),
                 scanHistory: cp.scanHistory || [],
                 updatedAt: new Date().toISOString(),
-              },
+              }),
               { merge: true }
             );
 
@@ -254,23 +296,26 @@ export const firestoreStorageService = {
               updatedAt: new Date().toISOString(),
             };
 
-            await setDoc(doc(db, 'sharedPlants', newSharedId), {
-              ...sharedDoc,
-              inMyGarden: false,
-            });
+            await setDoc(
+              doc(db, 'sharedPlants', newSharedId),
+              sanitizeForFirestore({
+                ...sharedDoc,
+                inMyGarden: false,
+              })
+            );
 
             await setDoc(
               doc(db, 'users', userId, 'userPlants', newSharedId),
-              {
+              sanitizeForFirestore({
                 id: newSharedId,
                 userId,
                 inMyGarden: true,
                 isFavorite: Boolean(lp.isFavorite),
-                lastFertilizedDate: lp.lastFertilizedDate || undefined,
-                customPhotoUrl: lp.customPhotoUrl || undefined,
+                ...(lp.lastFertilizedDate ? { lastFertilizedDate: lp.lastFertilizedDate } : {}),
+                ...(lp.customPhotoUrl ? { customPhotoUrl: lp.customPhotoUrl } : {}),
                 scanHistory: lp.scanHistory || [],
                 updatedAt: new Date().toISOString(),
-              },
+              }),
               { merge: true }
             );
 
@@ -378,17 +423,19 @@ export const firestoreStorageService = {
     plant: Plant
   ): Promise<void> {
     try {
-      const stateDoc: UserPlantStateDoc = {
+      const stateDoc: Record<string, any> = {
         id: plant.id,
         userId,
         inMyGarden: Boolean(plant.inMyGarden),
         isFavorite: Boolean(plant.isFavorite),
-        lastFertilizedDate: plant.lastFertilizedDate,
-        customPhotoUrl: plant.customPhotoUrl,
         scanHistory: plant.scanHistory || [],
         updatedAt: new Date().toISOString(),
       };
-      await setDoc(doc(db, 'users', userId, 'userPlants', plant.id), stateDoc, { merge: true });
+      if (plant.lastFertilizedDate) stateDoc.lastFertilizedDate = plant.lastFertilizedDate;
+      if (plant.customPhotoUrl) stateDoc.customPhotoUrl = plant.customPhotoUrl;
+      if (plant.fertilizerCustomDays) stateDoc.customFertilizerIntervalDays = plant.fertilizerCustomDays;
+
+      await setDoc(doc(db, 'users', userId, 'userPlants', plant.id), sanitizeForFirestore(stateDoc), { merge: true });
     } catch (err) {
       console.warn('Failed to sync plant state to Firestore:', err);
     }
@@ -438,34 +485,48 @@ export const firestoreStorageService = {
     const newPlantId = 'shared-' + Date.now() + '-' + Math.random().toString(36).substring(2, 7);
     const now = new Date().toISOString();
 
+    // Sanitize incoming plantData to strip any undefined values immediately
+    const sanitizedPlantData = sanitizeForFirestore(plantData);
+
     const sharedPlant: Plant = {
-      ...plantData,
+      ...sanitizedPlantData,
       id: newPlantId,
       isSharedCatalog: true,
       addedByUserId: user.uid,
-      addedByUserEmail: user.email || undefined,
       addedByUserName: user.displayName || user.email?.split('@')[0] || 'Community Gardener',
       createdAt: now,
       updatedAt: now,
       inMyGarden: true, // owned by creator
     };
+    if (user.email) {
+      sharedPlant.addedByUserEmail = user.email;
+    }
 
     try {
       // 1. Save directly into shared global catalog (without inMyGarden so other users start unowned)
-      await setDoc(doc(db, 'sharedPlants', newPlantId), {
-        ...sharedPlant,
-        inMyGarden: false,
-      });
+      await setDoc(
+        doc(db, 'sharedPlants', newPlantId),
+        sanitizeForFirestore({
+          ...sharedPlant,
+          inMyGarden: false,
+        })
+      );
 
       // 2. Save creator's private ownership state in userPlants
+      const creatorStateDoc: Record<string, any> = {
+        id: newPlantId,
+        userId: user.uid,
+        inMyGarden: true,
+        isFavorite: Boolean(plantData.isFavorite),
+        scanHistory: plantData.scanHistory || [],
+        updatedAt: now,
+      };
+      if (plantData.customPhotoUrl) creatorStateDoc.customPhotoUrl = plantData.customPhotoUrl;
+      if (plantData.lastFertilizedDate) creatorStateDoc.lastFertilizedDate = plantData.lastFertilizedDate;
+
       await setDoc(
         doc(db, 'users', user.uid, 'userPlants', newPlantId),
-        {
-          id: newPlantId,
-          userId: user.uid,
-          inMyGarden: true,
-          updatedAt: now,
-        },
+        sanitizeForFirestore(creatorStateDoc),
         { merge: true }
       );
 
@@ -511,10 +572,10 @@ export const firestoreStorageService = {
     try {
       await setDoc(
         doc(db, 'sharedPlants', updatedPlant.id),
-        {
+        sanitizeForFirestore({
           ...updatedPlant,
           updatedAt: now,
-        },
+        }),
         { merge: true }
       );
     } catch (err) {
@@ -608,16 +669,16 @@ export const firestoreStorageService = {
     };
 
     // 1. Write to global shared catalog
-    await setDoc(doc(db, 'sharedPlants', submission.originalPlantId), sharedPlant);
+    await setDoc(doc(db, 'sharedPlants', submission.originalPlantId), sanitizeForFirestore(sharedPlant));
 
     // 2. Mark submission as approved
     await setDoc(
       doc(db, 'userSubmittedPlants', submission.id),
-      {
+      sanitizeForFirestore({
         status: 'approved',
         reviewedAt: new Date().toISOString(),
         reviewedBy: adminEmail,
-      },
+      }),
       { merge: true }
     );
 
@@ -630,11 +691,11 @@ export const firestoreStorageService = {
   async dismissSubmittedPlant(submissionId: string, adminEmail: string): Promise<void> {
     await setDoc(
       doc(db, 'userSubmittedPlants', submissionId),
-      {
+      sanitizeForFirestore({
         status: 'dismissed',
         reviewedAt: new Date().toISOString(),
         reviewedBy: adminEmail,
-      },
+      }),
       { merge: true }
     );
   },
@@ -648,10 +709,10 @@ export const firestoreStorageService = {
     if (submissionId) {
       await setDoc(
         doc(db, 'userSubmittedPlants', submissionId),
-        {
+        sanitizeForFirestore({
           status: 'dismissed',
           reviewedAt: new Date().toISOString(),
-        },
+        }),
         { merge: true }
       );
     }
@@ -690,13 +751,16 @@ export const firestoreStorageService = {
     // Log the backup operation to systemBackups collection (protected by Firestore rules)
     try {
       const backupId = `backup-${Date.now()}`;
-      await setDoc(doc(db, 'systemBackups', backupId), {
-        backupId,
-        action: 'export',
-        timestamp: new Date().toISOString(),
-        adminEmail: emailToCheck,
-        itemCount: sharedPlants.length,
-      });
+      await setDoc(
+        doc(db, 'systemBackups', backupId),
+        sanitizeForFirestore({
+          backupId,
+          action: 'export',
+          timestamp: new Date().toISOString(),
+          adminEmail: emailToCheck,
+          itemCount: sharedPlants.length,
+        })
+      );
     } catch (e) {
       console.warn('Backup audit log skipped:', e);
     }
@@ -734,23 +798,29 @@ export const firestoreStorageService = {
       let restoredCount = 0;
       for (const plant of plantsToRestore) {
         if (!plant || !plant.id || !plant.name) continue;
-        await setDoc(doc(db, 'sharedPlants', plant.id), {
-          ...plant,
-          isSharedCatalog: true,
-          updatedAt: new Date().toISOString(),
-        });
+        await setDoc(
+          doc(db, 'sharedPlants', plant.id),
+          sanitizeForFirestore({
+            ...plant,
+            isSharedCatalog: true,
+            updatedAt: new Date().toISOString(),
+          })
+        );
         restoredCount++;
       }
 
       // Log the restore operation to systemBackups collection (protected by Firestore rules)
       const restoreId = `restore-${Date.now()}`;
-      await setDoc(doc(db, 'systemBackups', restoreId), {
-        restoreId,
-        action: 'restore',
-        timestamp: new Date().toISOString(),
-        adminEmail: emailToCheck,
-        restoredCount,
-      });
+      await setDoc(
+        doc(db, 'systemBackups', restoreId),
+        sanitizeForFirestore({
+          restoreId,
+          action: 'restore',
+          timestamp: new Date().toISOString(),
+          adminEmail: emailToCheck,
+          restoredCount,
+        })
+      );
 
       return { success: true, count: restoredCount };
     } catch (err: unknown) {
@@ -777,13 +847,16 @@ export const firestoreStorageService = {
 
     // 2. Log reset in systemBackups audit log (protected by Firestore rules)
     const resetId = `reset-${Date.now()}`;
-    await setDoc(doc(db, 'systemBackups', resetId), {
-      resetId,
-      action: 'reset_to_defaults',
-      timestamp: new Date().toISOString(),
-      adminEmail: emailToCheck,
-      clearedSharedPlantsCount: sharedSnap.size,
-    });
+    await setDoc(
+      doc(db, 'systemBackups', resetId),
+      sanitizeForFirestore({
+        resetId,
+        action: 'reset_to_defaults',
+        timestamp: new Date().toISOString(),
+        adminEmail: emailToCheck,
+        clearedSharedPlantsCount: sharedSnap.size,
+      })
+    );
 
     // 3. Reset local storage seed data as well
     storageService.resetToDefaults();

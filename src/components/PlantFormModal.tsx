@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import { MONTHS, CATEGORIES, SUNLIGHT_OPTIONS, WATER_OPTIONS, getPlantCategoryAccent } from '../utils/gardenHelpers';
 import { compressImageFile } from '../utils/imageUploadHelper';
+import { sanitizeForFirestore } from '../services/firestoreStorageService';
 
 interface PlantFormModalProps {
   initialPlant?: Plant | null;
@@ -452,63 +453,71 @@ export const PlantFormModal: React.FC<PlantFormModalProps> = ({
       .map((s) => s.trim())
       .filter(Boolean);
 
-    const payload = {
-      ...(initialPlant ? { id: initialPlant.id } : {}),
+    // Build the payload cleanly omitting or nulling any empty optional fields
+    const payload: Record<string, any> = {
+      ...(initialPlant?.id ? { id: initialPlant.id } : {}),
       name: name.trim(),
-      botanicalName: botanicalName.trim() || undefined,
-      hindiName: hindiName.trim() || undefined,
       category,
-      imageUrl: imageUrl.trim() || undefined,
-      customPhotoUrl: customPhotoUrl.trim() || undefined,
       waterRequirement: {
         level: waterLevel,
-        frequency: waterFrequency.trim(),
-        seasonalNote: waterNote.trim() || undefined,
+        frequency: waterFrequency.trim() || 'As needed when topsoil feels dry',
+        ...(waterNote.trim() ? { seasonalNote: waterNote.trim() } : {}),
       },
       sunlightRequirement: {
         type: sunlightType,
-        hoursNeeded: sunHours.trim(),
-        summerTerraceNote: sunSummerNote.trim() || undefined,
+        hoursNeeded: sunHours.trim() || '4-6 hours direct sun',
+        ...(sunSummerNote.trim() ? { summerTerraceNote: sunSummerNote.trim() } : {}),
       },
       fertilizerRequirement: {
-        type: fertilizerType.trim(),
-        npkOrOrganic: fertilizerNpk.trim(),
-        frequency: fertilizerFrequency.trim(),
+        type: fertilizerType.trim() || 'Organic compost / NPK',
+        npkOrOrganic: fertilizerNpk.trim() || 'Organic vermicompost / mustard cake tea',
+        frequency: fertilizerFrequency.trim() || 'Once every 3 to 4 weeks',
       },
       sowingTime: {
-        months: sowingMonths,
-        seasonText: sowingSeasonText.trim(),
-        method: sowingMethod.trim() || undefined,
+        months: sowingMonths.length > 0 ? sowingMonths : [2, 3, 6, 7],
+        seasonText: sowingSeasonText.trim() || 'Spring / Monsoon',
+        ...(sowingMethod.trim() ? { method: sowingMethod.trim() } : {}),
       },
       pruningTime: {
-        months: pruningMonths,
-        seasonText: pruningSeasonText.trim(),
-        frequency: pruningFrequency.trim(),
-        tips: pruningTips.trim(),
+        months: pruningMonths.length > 0 ? pruningMonths : [2, 9, 10],
+        seasonText: pruningSeasonText.trim() || 'Post-monsoon / Early Spring',
+        frequency: pruningFrequency.trim() || 'Light pruning as needed',
+        tips: pruningTips.trim() || 'Prune dead or diseased branches with clean shears.',
       },
       repottingTime: {
-        months: repottingMonths,
-        seasonText: repottingSeasonText.trim(),
-        frequency: repottingFrequency.trim(),
+        months: repottingMonths.length > 0 ? repottingMonths : [2, 3, 7],
+        seasonText: repottingSeasonText.trim() || 'Spring or Monsoon',
+        frequency: repottingFrequency.trim() || 'Once every 1 to 2 years',
         signs: signsArray.length > 0 ? signsArray : ['Roots tightly bounded in container'],
       },
       potSizeRequired: {
-        sizeInches: potSizeInches.trim(),
-        volumeLiters: potVolumeLiters.trim(),
-        materialAdvice: potMaterial.trim() || undefined,
+        sizeInches: potSizeInches.trim() || '10 to 12 inches',
+        volumeLiters: potVolumeLiters.trim() || '10–15 Liters',
+        ...(potMaterial.trim() ? { materialAdvice: potMaterial.trim() } : {}),
       },
       floweringSeason: {
         isFlowering,
         months: isFlowering ? floweringMonths : [],
-        seasonText: floweringSeasonText.trim(),
+        seasonText: isFlowering
+          ? (floweringSeasonText.trim() || 'Summer through Autumn')
+          : 'Not applicable (foliage / non-flowering plant)',
       },
       diseasesAndPests: diseases.filter((d) => d.name.trim() !== ''),
-      notes: notes.trim() || undefined,
-      lastFertilizedDate: lastFertilizedDate || undefined,
       isFavorite: initialPlant?.isFavorite || false,
     };
 
-    onSave(payload as Plant);
+    // Optional top-level fields: ONLY attach if non-empty string, NEVER undefined
+    if (botanicalName.trim()) payload.botanicalName = botanicalName.trim();
+    if (hindiName.trim()) payload.hindiName = hindiName.trim();
+    if (imageUrl.trim()) payload.imageUrl = imageUrl.trim();
+    if (customPhotoUrl.trim()) payload.customPhotoUrl = customPhotoUrl.trim();
+    if (notes.trim()) payload.notes = notes.trim();
+    if (lastFertilizedDate) payload.lastFertilizedDate = lastFertilizedDate;
+
+    // Apply strict sanitization to remove any possible undefined values
+    const cleanPayload = sanitizeForFirestore(payload);
+
+    onSave(cleanPayload as Plant);
     onClose();
   };
 

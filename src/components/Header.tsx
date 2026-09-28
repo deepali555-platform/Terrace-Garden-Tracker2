@@ -76,8 +76,8 @@ export const Header: React.FC<HeaderProps> = ({
           </button>
         </div>
 
-        {/* Zone 2: Navigation links */}
-        <nav className="hidden lg:flex items-center gap-1.5 text-sm font-semibold">
+        {/* Zone 2: Navigation links on desktop (>= 768px) */}
+        <nav className="hidden md:flex items-center gap-1.5 text-sm font-semibold">
           {/* Tab 1: My Garden (Owned Plants Only) */}
           <button
             onClick={() => onSelectTab('my-garden')}
@@ -179,13 +179,13 @@ export const Header: React.FC<HeaderProps> = ({
           )}
         </nav>
 
-        {/* Zone 3: Primary Action buttons */}
-        <div className="flex items-center gap-1.5 sm:gap-2 shrink-0 min-w-0">
+        {/* Zone 3: Primary Action buttons & Log in / Account - Hidden on mobile (< 768px), visible on desktop */}
+        <div className="hidden md:flex items-center gap-2 shrink-0 min-w-0">
           {onOpenScanModal && (
             <button
               type="button"
               onClick={onOpenScanModal}
-              className="flex items-center justify-center gap-1.5 px-2.5 sm:px-3 py-2 text-xs sm:text-sm font-bold text-stone-900 bg-amber-400 hover:bg-amber-300 active:scale-[0.98] rounded-xl shadow-md border border-amber-300 transition-all whitespace-nowrap min-h-[44px]"
+              className="flex items-center justify-center gap-1.5 px-3 py-2 text-xs sm:text-sm font-bold text-stone-900 bg-amber-400 hover:bg-amber-300 active:scale-[0.98] rounded-xl shadow-md border border-amber-300 transition-all whitespace-nowrap min-h-[44px]"
               title="Scan plant with AI health camera"
             >
               <Camera className="w-4 h-4 text-stone-900 stroke-[2.4] shrink-0" />
@@ -196,7 +196,7 @@ export const Header: React.FC<HeaderProps> = ({
           <button
             type="button"
             onClick={onOpenAddModal}
-            className="flex items-center justify-center gap-1.5 px-2.5 sm:px-3.5 py-2 text-xs sm:text-sm font-bold text-white bg-emerald-600 hover:bg-emerald-500 active:scale-[0.98] rounded-xl shadow-md border border-emerald-400/40 transition-all whitespace-nowrap min-h-[44px]"
+            className="flex items-center justify-center gap-1.5 px-3.5 py-2 text-xs sm:text-sm font-bold text-white bg-emerald-600 hover:bg-emerald-500 active:scale-[0.98] rounded-xl shadow-md border border-emerald-400/40 transition-all whitespace-nowrap min-h-[44px]"
             title="Add Plant to Garden Tracker"
           >
             <Plus className="w-4 h-4 stroke-[2.75] shrink-0" />
@@ -236,13 +236,12 @@ export const Header: React.FC<HeaderProps> = ({
               <button
                 type="button"
                 onClick={onOpenLoginModal}
-                className="flex items-center justify-center gap-1.5 w-[44px] h-[44px] min-w-[44px] min-h-[44px] min-[480px]:w-auto min-[480px]:h-auto px-0 min-[480px]:px-3.5 py-0 min-[480px]:py-2 text-xs sm:text-sm font-bold text-white bg-emerald-700 hover:bg-emerald-600 border border-emerald-500/70 rounded-xl transition-all active:scale-95 shadow-sm cursor-pointer whitespace-nowrap shrink-0"
+                className="flex items-center justify-center gap-1.5 px-3.5 py-2 text-xs sm:text-sm font-bold text-white bg-emerald-700 hover:bg-emerald-600 border border-emerald-500/70 rounded-xl transition-all active:scale-95 shadow-sm cursor-pointer whitespace-nowrap shrink-0 min-h-[44px]"
                 title="Log in with Google"
                 aria-label="Log in to account"
               >
-                <UserIcon className="w-5 h-5 text-emerald-100 min-[480px]:hidden shrink-0" />
-                <LogIn className="w-4 h-4 text-emerald-200 hidden min-[480px]:block shrink-0" />
-                <span className="font-bold hidden min-[480px]:inline">Log in</span>
+                <LogIn className="w-4 h-4 text-emerald-200 shrink-0" />
+                <span className="font-bold">Log in</span>
               </button>
             )}
 

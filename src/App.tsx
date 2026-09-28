@@ -1243,7 +1243,10 @@ export default function App() {
       <BottomNav
         currentTab={currentTab}
         onSelectTab={handleSelectTab}
-        onOpenScanModal={() => handleOpenScanModal()}
+        onOpenLoginModal={() => {
+          setAuthPromptReason(null);
+          setShowLoginModal(true);
+        }}
         overdueFertilizerCount={overdueFertilizerCount}
         gardenPlantCount={ownedPlants.length}
       />

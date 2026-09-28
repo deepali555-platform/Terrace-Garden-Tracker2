@@ -50,26 +50,26 @@ export const Header: React.FC<HeaderProps> = ({
   };
 
   return (
-    <header className="sticky top-0 z-50 bg-[#0d2f1c] text-white border-b border-emerald-900/70 px-3 sm:px-8 py-3 shadow-md relative transition-colors">
+    <header className="sticky top-0 z-50 bg-[#0d2f1c] text-white border-b border-emerald-900/70 px-3 sm:px-8 py-3 shadow-md relative transition-colors w-full max-w-full box-border">
       {/* Subtle Botanical SVG Background Pattern */}
       <div className="absolute inset-0 overflow-hidden opacity-[0.04] pointer-events-none bg-[radial-gradient(#86efac_1px,transparent_1px)] [background-size:16px_16px]" />
 
-      <div className="max-w-6xl mx-auto flex items-center justify-between relative z-10 gap-3">
+      <div className="w-full max-w-6xl mx-auto flex items-center justify-between relative z-10 gap-2 sm:gap-3 min-w-0">
         {/* Zone 1: Brand title with leaf icon */}
-        <div className="flex items-center gap-2 shrink-0 min-w-0">
+        <div className="flex items-center gap-2 min-w-0 shrink">
           <button
             type="button"
             onClick={() => onSelectTab('home')}
-            className="flex items-center gap-2 text-left group focus:outline-none min-h-[44px] -ml-1 pl-1"
+            className="flex items-center gap-1.5 sm:gap-2 text-left group focus:outline-none min-h-[44px] -ml-1 pl-1 min-w-0"
           >
             <div className="w-9 h-9 rounded-2xl bg-emerald-600/90 text-white flex items-center justify-center font-bold shadow-xs border border-emerald-400/30 group-hover:scale-105 transition-transform shrink-0">
               <Leaf className="w-5 h-5 text-emerald-100 stroke-[2.2]" />
             </div>
-            <div className="min-w-0">
+            <div className="min-w-0 truncate">
               <span className="text-sm sm:text-lg font-bold tracking-tight text-white group-hover:text-emerald-300 transition-colors truncate block">
                 Terrace Garden
               </span>
-              <span className="hidden sm:block text-[10px] uppercase font-bold tracking-widest text-emerald-300/80 -mt-0.5">
+              <span className="hidden sm:block text-[10px] uppercase font-bold tracking-widest text-emerald-300/80 -mt-0.5 truncate">
                 Indian Balcony & Terrace
               </span>
             </div>
@@ -180,15 +180,15 @@ export const Header: React.FC<HeaderProps> = ({
         </nav>
 
         {/* Zone 3: Primary Action buttons */}
-        <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+        <div className="flex items-center gap-1.5 sm:gap-2 shrink-0 min-w-0">
           {onOpenScanModal && (
             <button
               type="button"
               onClick={onOpenScanModal}
-              className="flex items-center justify-center gap-1.5 px-3 py-2 text-xs sm:text-sm font-bold text-stone-900 bg-amber-400 hover:bg-amber-300 active:scale-[0.98] rounded-xl shadow-md border border-amber-300 transition-all whitespace-nowrap min-h-[44px]"
+              className="flex items-center justify-center gap-1.5 px-2.5 sm:px-3 py-2 text-xs sm:text-sm font-bold text-stone-900 bg-amber-400 hover:bg-amber-300 active:scale-[0.98] rounded-xl shadow-md border border-amber-300 transition-all whitespace-nowrap min-h-[44px]"
               title="Scan plant with AI health camera"
             >
-              <Camera className="w-4 h-4 text-stone-900 stroke-[2.4]" />
+              <Camera className="w-4 h-4 text-stone-900 stroke-[2.4] shrink-0" />
               <span>Scan</span>
             </button>
           )}
@@ -196,15 +196,15 @@ export const Header: React.FC<HeaderProps> = ({
           <button
             type="button"
             onClick={onOpenAddModal}
-            className="flex items-center justify-center gap-1.5 px-3 sm:px-3.5 py-2 text-xs sm:text-sm font-bold text-white bg-emerald-600 hover:bg-emerald-500 active:scale-[0.98] rounded-xl shadow-md border border-emerald-400/40 transition-all whitespace-nowrap min-h-[44px]"
+            className="flex items-center justify-center gap-1.5 px-2.5 sm:px-3.5 py-2 text-xs sm:text-sm font-bold text-white bg-emerald-600 hover:bg-emerald-500 active:scale-[0.98] rounded-xl shadow-md border border-emerald-400/40 transition-all whitespace-nowrap min-h-[44px]"
             title="Add Plant to Garden Tracker"
           >
-            <Plus className="w-4 h-4 stroke-[2.75]" />
+            <Plus className="w-4 h-4 stroke-[2.75] shrink-0" />
             <span>Add Plant</span>
           </button>
 
           {/* User Profile / Authentication Menu in Top-Right Corner */}
-          <div className="relative" ref={profileMenuRef}>
+          <div className="relative shrink-0" ref={profileMenuRef}>
             {user ? (
               <button
                 type="button"
@@ -236,12 +236,13 @@ export const Header: React.FC<HeaderProps> = ({
               <button
                 type="button"
                 onClick={onOpenLoginModal}
-                className="flex items-center justify-center gap-1.5 px-3 py-1.5 sm:px-3.5 sm:py-2 text-xs sm:text-sm font-bold text-white bg-emerald-700 hover:bg-emerald-600 border border-emerald-500/70 rounded-xl transition-all min-h-[44px] active:scale-95 shadow-sm cursor-pointer whitespace-nowrap"
+                className="flex items-center justify-center gap-1.5 w-[44px] h-[44px] min-w-[44px] min-h-[44px] min-[480px]:w-auto min-[480px]:h-auto px-0 min-[480px]:px-3.5 py-0 min-[480px]:py-2 text-xs sm:text-sm font-bold text-white bg-emerald-700 hover:bg-emerald-600 border border-emerald-500/70 rounded-xl transition-all active:scale-95 shadow-sm cursor-pointer whitespace-nowrap shrink-0"
                 title="Log in with Google"
                 aria-label="Log in to account"
               >
-                <LogIn className="w-4 h-4 text-emerald-200" />
-                <span className="font-bold">Log in</span>
+                <UserIcon className="w-5 h-5 text-emerald-100 min-[480px]:hidden shrink-0" />
+                <LogIn className="w-4 h-4 text-emerald-200 hidden min-[480px]:block shrink-0" />
+                <span className="font-bold hidden min-[480px]:inline">Log in</span>
               </button>
             )}
 

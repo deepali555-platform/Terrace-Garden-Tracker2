@@ -9,7 +9,7 @@ import {
   onSnapshot,
   Unsubscribe,
 } from 'firebase/firestore';
-import { db } from '../firebase';
+import { db, auth } from '../firebase';
 import { Plant, HealthScanRecord } from '../types/plant';
 import { UserSubmittedPlantRecord } from '../types/admin';
 import { INITIAL_PLANTS } from '../data/seedPlants';
@@ -661,8 +661,10 @@ export const firestoreStorageService = {
    * Admin-only operation: Exports a complete snapshot of shared catalog and submission data.
    * Backend check: Rejects if the user's email is not an authorized administrator.
    */
-  async adminExportDatabase(user: { email?: string | null }): Promise<string> {
-    if (!isUserAdmin(user?.email)) {
+  async adminExportDatabase(user?: { email?: string | null } | null): Promise<string> {
+    const currentAuthUser = auth.currentUser;
+    const emailToCheck = currentAuthUser?.email || user?.email;
+    if (!currentAuthUser || !isUserAdmin(currentAuthUser.email) || !isUserAdmin(emailToCheck)) {
       throw new Error('Unauthorized: Only the verified app administrator can export database backups.');
     }
 
@@ -677,7 +679,7 @@ export const firestoreStorageService = {
     const backupPayload = {
       exportVersion: 2,
       exportTimestamp: new Date().toISOString(),
-      exportedBy: user.email,
+      exportedBy: emailToCheck,
       databaseId: 'terrace-garden-shared-catalog',
       sharedPlantsCount: sharedPlants.length,
       sharedPlants,
@@ -692,7 +694,7 @@ export const firestoreStorageService = {
         backupId,
         action: 'export',
         timestamp: new Date().toISOString(),
-        adminEmail: user.email,
+        adminEmail: emailToCheck,
         itemCount: sharedPlants.length,
       });
     } catch (e) {
@@ -707,10 +709,12 @@ export const firestoreStorageService = {
    * Backend check: Rejects if the user's email is not an authorized administrator.
    */
   async adminRestoreDatabase(
-    user: { email?: string | null },
+    user: { email?: string | null } | null | undefined,
     backupJson: string
   ): Promise<{ success: boolean; count?: number; error?: string }> {
-    if (!isUserAdmin(user?.email)) {
+    const currentAuthUser = auth.currentUser;
+    const emailToCheck = currentAuthUser?.email || user?.email;
+    if (!currentAuthUser || !isUserAdmin(currentAuthUser.email) || !isUserAdmin(emailToCheck)) {
       throw new Error('Unauthorized: Only the verified app administrator can restore the database.');
     }
 
@@ -744,7 +748,7 @@ export const firestoreStorageService = {
         restoreId,
         action: 'restore',
         timestamp: new Date().toISOString(),
-        adminEmail: user.email,
+        adminEmail: emailToCheck,
         restoredCount,
       });
 
@@ -759,8 +763,10 @@ export const firestoreStorageService = {
    * Admin-only operation: Resets the shared catalog in Firestore to default seed plants.
    * Backend check: Rejects if the user's email is not an authorized administrator.
    */
-  async adminResetDatabase(user: { email?: string | null }): Promise<void> {
-    if (!isUserAdmin(user?.email)) {
+  async adminResetDatabase(user?: { email?: string | null } | null): Promise<void> {
+    const currentAuthUser = auth.currentUser;
+    const emailToCheck = currentAuthUser?.email || user?.email;
+    if (!currentAuthUser || !isUserAdmin(currentAuthUser.email) || !isUserAdmin(emailToCheck)) {
       throw new Error('Unauthorized: Only the verified app administrator can reset the catalog database.');
     }
 
@@ -775,7 +781,7 @@ export const firestoreStorageService = {
       resetId,
       action: 'reset_to_defaults',
       timestamp: new Date().toISOString(),
-      adminEmail: user.email,
+      adminEmail: emailToCheck,
       clearedSharedPlantsCount: sharedSnap.size,
     });
 

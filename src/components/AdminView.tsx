@@ -608,104 +608,108 @@ export const AdminView: React.FC<AdminViewProps> = ({
       {/* ============================================================ */}
       {/* SENSITIVE DATABASE MAINTENANCE & BACKUPS (ADMIN-ONLY)       */}
       {/* ============================================================ */}
-      <div className="bg-white rounded-3xl border border-stone-200/90 p-5 sm:p-7 shadow-xs space-y-4">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-stone-100">
-          <div className="flex items-center gap-2.5">
-            <div className="w-10 h-10 rounded-2xl bg-amber-50 text-amber-800 flex items-center justify-center border border-amber-200 shadow-2xs">
-              <Database className="w-5 h-5 text-amber-700" />
-            </div>
-            <div>
-              <h3 className="text-base font-bold text-stone-900">
-                Database Maintenance & System Backups
-              </h3>
-              <p className="text-xs text-stone-500">
-                Restricted to verified app owner ({user?.email || ADMIN_EMAILS[0]}). Invisible to regular users.
-              </p>
-            </div>
-          </div>
-          <span className="self-start sm:self-auto text-[11px] font-bold text-amber-900 bg-amber-100/70 border border-amber-300/80 px-2.5 py-1 rounded-full">
-            Admin Operations Only
-          </span>
-        </div>
-
-        <p className="text-xs text-stone-600 leading-relaxed">
-          Manage full catalog backups, restore snapshots, or reset community additions back to the initial 21 authentic Indian terrace plants. All actions are authenticated and recorded in the audit log.
-        </p>
-
-        <div className="pt-2 flex flex-wrap items-center gap-3">
-          {/* 1. Backup Button */}
-          <button
-            type="button"
-            onClick={handleAdminBackup}
-            disabled={isPerformingMaintenance}
-            className="min-h-[44px] inline-flex items-center gap-2 px-4 py-2.5 bg-emerald-800 hover:bg-emerald-900 text-white rounded-xl text-xs font-bold transition-all shadow-xs active:scale-95 disabled:opacity-50 cursor-pointer"
-            title="Download full database backup as JSON"
-          >
-            <Download className="w-4 h-4 text-emerald-200" />
-            <span>Backup Database (JSON)</span>
-          </button>
-
-          {/* 2. Restore Button */}
-          <label className="min-h-[44px] inline-flex items-center gap-2 px-4 py-2.5 bg-white border border-stone-300 hover:bg-stone-50 text-stone-800 rounded-xl text-xs font-bold transition-all shadow-2xs active:scale-95 cursor-pointer">
-            <Upload className="w-4 h-4 text-stone-600" />
-            <span>Restore Backup</span>
-            <input
-              type="file"
-              ref={fileInputRef}
-              accept=".json"
-              disabled={isPerformingMaintenance}
-              onChange={handleAdminRestore}
-              className="hidden"
-            />
-          </label>
-
-          {/* 3. Reset Database Button */}
-          <button
-            type="button"
-            onClick={() => setShowResetConfirm(true)}
-            disabled={isPerformingMaintenance}
-            className="min-h-[44px] inline-flex items-center gap-2 px-4 py-2.5 bg-rose-50 hover:bg-rose-100 border border-rose-200 text-rose-800 rounded-xl text-xs font-bold transition-all shadow-2xs active:scale-95 disabled:opacity-50 cursor-pointer"
-            title="Reset database to default 21 Indian terrace plants"
-          >
-            <RotateCcw className="w-4 h-4 text-rose-600" />
-            <span>Reset Database</span>
-          </button>
-        </div>
-
-        {/* Reset Confirmation Dialog */}
-        {showResetConfirm && (
-          <div className="mt-4 p-4 bg-rose-50 border border-rose-200 rounded-2xl space-y-3 animate-in fade-in duration-150">
-            <div className="flex items-start gap-3">
-              <AlertTriangle className="w-5 h-5 text-rose-700 shrink-0 mt-0.5" />
-              <div className="space-y-1">
-                <h4 className="text-xs font-bold text-rose-950">
-                  Confirm Database Reset
-                </h4>
-                <p className="text-xs text-rose-900/90 leading-relaxed">
-                  Are you sure you want to reset the database? This will clear all community additions from the shared catalog and restore the default 21 authentic Indian terrace plants.
+      {/* SECTION 4: DATABASE MAINTENANCE & ADMIN BACKUPS (OWNER ONLY) */}
+      {/* ============================================================ */}
+      {isAdmin && (
+        <div className="bg-white rounded-3xl border border-stone-200/90 p-5 sm:p-7 shadow-xs space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-stone-100">
+            <div className="flex items-center gap-2.5">
+              <div className="w-10 h-10 rounded-2xl bg-amber-50 text-amber-800 flex items-center justify-center border border-amber-200 shadow-2xs">
+                <Database className="w-5 h-5 text-amber-700" />
+              </div>
+              <div>
+                <h3 className="text-base font-bold text-stone-900">
+                  Database Maintenance & System Backups
+                </h3>
+                <p className="text-xs text-stone-500">
+                  Restricted to verified app owner ({user?.email || ADMIN_EMAILS[0]}). Invisible to regular users.
                 </p>
               </div>
             </div>
-            <div className="flex items-center gap-2.5 justify-end pt-1">
-              <button
-                type="button"
-                onClick={() => setShowResetConfirm(false)}
-                className="min-h-[38px] px-3.5 py-1.5 text-xs font-bold text-stone-600 hover:text-stone-900 bg-white border border-stone-200 rounded-xl transition-colors cursor-pointer"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                onClick={handleAdminReset}
-                disabled={isPerformingMaintenance}
-                className="min-h-[38px] px-4 py-1.5 text-xs font-bold text-white bg-rose-700 hover:bg-rose-800 rounded-xl shadow-xs transition-all active:scale-95 disabled:opacity-50 cursor-pointer"
-              >
-                {isPerformingMaintenance ? 'Resetting...' : 'Yes, Reset Database'}
-              </button>
-            </div>
+            <span className="self-start sm:self-auto text-[11px] font-bold text-amber-900 bg-amber-100/70 border border-amber-300/80 px-2.5 py-1 rounded-full">
+              Admin Operations Only
+            </span>
           </div>
-        )}
-      </div>
+
+          <p className="text-xs text-stone-600 leading-relaxed">
+            Manage full catalog backups, restore snapshots, or reset community additions back to the initial 21 authentic Indian terrace plants. All actions are authenticated and recorded in the audit log.
+          </p>
+
+          <div className="pt-2 flex flex-wrap items-center gap-3">
+            {/* 1. Backup (JSON) Button */}
+            <button
+              type="button"
+              onClick={handleAdminBackup}
+              disabled={isPerformingMaintenance}
+              className="min-h-[44px] inline-flex items-center gap-2 px-4 py-2.5 bg-emerald-800 hover:bg-emerald-900 text-white rounded-xl text-xs font-bold transition-all shadow-xs active:scale-95 disabled:opacity-50 cursor-pointer"
+              title="Download full database backup as JSON"
+            >
+              <Download className="w-4 h-4 text-emerald-200" />
+              <span>Backup (JSON)</span>
+            </button>
+
+            {/* 2. Restore Button */}
+            <label className="min-h-[44px] inline-flex items-center gap-2 px-4 py-2.5 bg-white border border-stone-300 hover:bg-stone-50 text-stone-800 rounded-xl text-xs font-bold transition-all shadow-2xs active:scale-95 cursor-pointer">
+              <Upload className="w-4 h-4 text-stone-600" />
+              <span>Restore</span>
+              <input
+                type="file"
+                ref={fileInputRef}
+                accept=".json"
+                disabled={isPerformingMaintenance}
+                onChange={handleAdminRestore}
+                className="hidden"
+              />
+            </label>
+
+            {/* 3. Reset Database Button */}
+            <button
+              type="button"
+              onClick={() => setShowResetConfirm(true)}
+              disabled={isPerformingMaintenance}
+              className="min-h-[44px] inline-flex items-center gap-2 px-4 py-2.5 bg-rose-50 hover:bg-rose-100 border border-rose-200 text-rose-800 rounded-xl text-xs font-bold transition-all shadow-2xs active:scale-95 disabled:opacity-50 cursor-pointer"
+              title="Reset database to default 21 Indian terrace plants"
+            >
+              <RotateCcw className="w-4 h-4 text-rose-600" />
+              <span>Reset Database</span>
+            </button>
+          </div>
+
+          {/* Reset Confirmation Dialog */}
+          {showResetConfirm && (
+            <div className="mt-4 p-4 bg-rose-50 border border-rose-200 rounded-2xl space-y-3 animate-in fade-in duration-150">
+              <div className="flex items-start gap-3">
+                <AlertTriangle className="w-5 h-5 text-rose-700 shrink-0 mt-0.5" />
+                <div className="space-y-1">
+                  <h4 className="text-xs font-bold text-rose-950">
+                    Confirm Database Reset
+                  </h4>
+                  <p className="text-xs text-rose-900/90 leading-relaxed">
+                    Are you sure you want to reset the database? This will clear all community additions from the shared catalog and restore the default 21 authentic Indian terrace plants.
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2.5 justify-end pt-1">
+                <button
+                  type="button"
+                  onClick={() => setShowResetConfirm(false)}
+                  className="min-h-[38px] px-3.5 py-1.5 text-xs font-bold text-stone-600 hover:text-stone-900 bg-white border border-stone-200 rounded-xl transition-colors cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={handleAdminReset}
+                  disabled={isPerformingMaintenance}
+                  className="min-h-[38px] px-4 py-1.5 text-xs font-bold text-white bg-rose-700 hover:bg-rose-800 rounded-xl shadow-xs transition-all active:scale-95 disabled:opacity-50 cursor-pointer"
+                >
+                  {isPerformingMaintenance ? 'Resetting...' : 'Yes, Reset Database'}
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 };

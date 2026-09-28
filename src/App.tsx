@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { Plant, PlantCategory, SunlightType, WaterLevel, HealthScanRecord } from './types/plant';
 import { storageService } from './services/storageService';
 import { firestoreStorageService, UserPlantStateDoc } from './services/firestoreStorageService';
+import { auth } from './firebase';
 import { INITIAL_PLANTS } from './data/seedPlants';
 import { VERIFIED_PLANT_IMAGES } from './data/plantImages';
 import { useAuth } from './contexts/AuthContext';
@@ -72,11 +73,15 @@ export default function App() {
     }
   }, [user, pendingAction]);
 
-  // When user logs out, redirect to 'home' if currently on a private tab
+  // When user logs out, redirect to 'home' if currently on a private tab.
+  // Also redirect if a logged-in user is not an administrator and on admin tab.
   useEffect(() => {
     if (!user && !authLoading && currentTab !== 'home') {
       setCurrentTab('home');
       setSelectedPlantForDetail(null);
+    } else if (user && !authLoading && currentTab === 'admin' && !isUserAdmin(user.email)) {
+      setCurrentTab('home');
+      showToast('Access restricted: your account is not an authorized administrator.');
     }
   }, [user, authLoading, currentTab]);
 
@@ -93,7 +98,12 @@ export default function App() {
       }
       if (!user) {
         requireAuth(() => {
-          setCurrentTab('admin');
+          // Verify newly signed-in user is an administrator
+          if (auth.currentUser && isUserAdmin(auth.currentUser.email)) {
+            setCurrentTab('admin');
+          } else {
+            showToast('Access restricted: your account is not an authorized administrator.');
+          }
         }, 'Sign in with your administrator account to access the Admin Portal.');
         return;
       }
@@ -518,6 +528,15 @@ export default function App() {
       setPreselectedDiagnosisPlantId(plantId);
       setCurrentTab('diagnosis');
     }, 'Sign in with Google to diagnose plant issues and save scan histories.');
+  };
+
+  // Extracts the first name from a user's display name for a personalized greeting
+  const getUserFirstName = (displayName?: string | null): string | null => {
+    if (!displayName) return null;
+    const trimmed = displayName.trim();
+    if (!trimmed) return null;
+    const first = trimmed.split(/\s+/)[0];
+    return first ? first.trim() : null;
   };
 
   // Helper function to rank search relevance: exact matches > startsWith > word matches > contains
@@ -994,7 +1013,19 @@ export default function App() {
 
         {/* VIEW 2: FULL REFERENCE GUIDE (All 21 Plants, Browsable at All Times) */}
         {currentTab === 'home' && (
-          <div className="space-y-6">
+          <div className="space-y-4 sm:space-y-6">
+            {/* Personalized Welcome Message for Logged-In Users */}
+            {user && (
+              <div className="flex items-center gap-1.5 text-xs sm:text-sm font-semibold text-emerald-950 -mb-1 sm:-mb-2 animate-in fade-in duration-150">
+                <span className="text-sm sm:text-base leading-none">👋</span>
+                <span>
+                  {getUserFirstName(user.displayName)
+                    ? `Welcome back, ${getUserFirstName(user.displayName)}!`
+                    : 'Welcome back!'}
+                </span>
+              </div>
+            )}
+
             {/* Reference Guide Header Banner - Sleek & Compact on Mobile */}
             <div className="bg-gradient-to-br from-[#1c3e27] via-[#244b30] to-[#1a3824] text-stone-100 rounded-2xl sm:rounded-3xl p-3.5 sm:p-6 lg:p-7 relative overflow-hidden shadow-md border border-emerald-700/40">
               <div className="max-w-2xl relative z-10 space-y-2 sm:space-y-2.5">

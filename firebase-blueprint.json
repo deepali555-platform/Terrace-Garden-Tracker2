@@ -80,6 +80,19 @@
         "isSharedCatalog": { "type": "boolean", "description": "True for shared catalog plants" }
       },
       "required": ["id", "name", "category", "isSharedCatalog"]
+    },
+    "SystemBackup": {
+      "title": "SystemBackup",
+      "description": "Audit log record of database backup, restore, or reset operations restricted to app administrators",
+      "type": "object",
+      "properties": {
+        "backupId": { "type": "string", "description": "Unique record identifier" },
+        "action": { "type": "string", "description": "Action performed: export, restore, or reset_to_defaults" },
+        "timestamp": { "type": "string", "description": "ISO timestamp of operation" },
+        "adminEmail": { "type": "string", "description": "Email of admin who triggered action" },
+        "itemCount": { "type": "number", "description": "Number of items affected" }
+      },
+      "required": ["backupId", "action", "timestamp", "adminEmail"]
     }
   },
   "firestore": {
@@ -102,6 +115,10 @@
     "/sharedPlants/{plantId}": {
       "schema": "SharedCatalogPlant",
       "description": "Global community plants approved into the shared reference catalog"
+    },
+    "/systemBackups/{backupId}": {
+      "schema": "SystemBackup",
+      "description": "Audit records for database export, restore, and reset actions restricted to administrators"
     }
   }
 }

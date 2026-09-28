@@ -12,6 +12,7 @@ interface HeaderProps {
   overdueFertilizerCount?: number;
   gardenPlantCount?: number;
   totalPlantCount?: number;
+  isLoadingPlants?: boolean;
   onResetDefaults?: () => void;
 }
 
@@ -24,6 +25,7 @@ export const Header: React.FC<HeaderProps> = ({
   overdueFertilizerCount = 0,
   gardenPlantCount = 0,
   totalPlantCount = 0,
+  isLoadingPlants = false,
   onResetDefaults,
 }) => {
   const { user, signOut, isGuest } = useAuth();
@@ -100,7 +102,7 @@ export const Header: React.FC<HeaderProps> = ({
             </span>
           </button>
 
-          {/* Tab 2: All Plants Guide (Full 20-Plant Reference Library) */}
+          {/* Tab 2: All Plants Guide (Full Reference Library) */}
           <button
             onClick={() => onSelectTab('home')}
             className={`flex items-center gap-2 px-3 py-1.5 rounded-full transition-all ${
@@ -111,11 +113,15 @@ export const Header: React.FC<HeaderProps> = ({
           >
             <Sprout className="w-4 h-4 text-emerald-400" />
             <span>Reference Guide</span>
-            {totalPlantCount > 0 && (
+            {isLoadingPlants ? (
+              <span className="text-[10px] opacity-75 font-normal">
+                (...)
+              </span>
+            ) : totalPlantCount > 0 ? (
               <span className="text-[10px] opacity-75 font-normal">
                 ({totalPlantCount})
               </span>
-            )}
+            ) : null}
           </button>
 
           {/* Tab 3: Fertilizer Schedule (Only owned plants) */}

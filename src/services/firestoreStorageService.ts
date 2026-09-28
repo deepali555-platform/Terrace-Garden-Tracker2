@@ -32,10 +32,71 @@ export interface UserPlantStateDoc {
  * e.g. "  Holy   Basil  " -> "holy basil"
  */
 export function normalizePlantName(name: string): string {
-  return (name || '').trim().toLowerCase().replace(/\s+/g, ' ');
+  if (!name) return '';
+  return name.trim().toLowerCase().replace(/\s+/g, ' ');
+}
+
+export function getPlantDeduplicationKey(plant: Partial<Plant>): {
+  normalizedName: string;
+  primaryName: string;
+  botanical: string;
+} {
+  const normalizedName = normalizePlantName(plant.name || '');
+  // Extract primary name before parenthesis, slashes, or commas (e.g. "Sadabahar (Madagascar Periwinkle)" -> "sadabahar")
+  const primaryName = normalizePlantName((plant.name || '').split(/[\(/,]/)[0]);
+  const botanical = normalizePlantName(plant.botanicalName || '');
+  return { normalizedName, primaryName, botanical };
+}
+
+/**
+ * Deduplicates a list of plants so plants with the exact same name (ignoring case and whitespace),
+ * matching primary common names, or matching botanical names are treated as a single plant.
+ */
+export function deduplicatePlants(rawList: Plant[]): Plant[] {
+  const seenExact = new Map<string, Plant>();
+  const seenPrimary = new Map<string, Plant>();
+  const seenBotanical = new Map<string, Plant>();
+  const seenId = new Set<string>();
+  const uniqueList: Plant[] = [];
+
+  for (const plant of rawList) {
+    if (!plant || !plant.name) continue;
+    if (seenId.has(plant.id)) continue;
+
+    const { normalizedName, primaryName, botanical } = getPlantDeduplicationKey(plant);
+
+    const existing =
+      seenExact.get(normalizedName) ||
+      (botanical && seenBotanical.get(botanical)) ||
+      seenPrimary.get(primaryName);
+
+    if (existing) {
+      // Keep rich seed metadata if available, but merge any user attribution or custom images
+      if (plant.addedByUserId && !existing.addedByUserId) {
+        existing.addedByUserId = plant.addedByUserId;
+        existing.addedByUserEmail = plant.addedByUserEmail;
+        existing.addedByUserName = plant.addedByUserName;
+      }
+      if (plant.imageUrl && !existing.imageUrl) {
+        existing.imageUrl = plant.imageUrl;
+      }
+      continue;
+    }
+
+    seenId.add(plant.id);
+    seenExact.set(normalizedName, plant);
+    seenPrimary.set(primaryName, plant);
+    if (botanical) {
+      seenBotanical.set(botanical, plant);
+    }
+    uniqueList.push(plant);
+  }
+
+  return uniqueList;
 }
 
 export const firestoreStorageService = {
+  deduplicatePlants,
   /**
    * Listens to real-time updates on the shared plants collection.
    * Fires whenever any user adds, edits, or removes a plant from the shared catalog.
@@ -335,11 +396,22 @@ export const firestoreStorageService = {
   /**
    * Checks whether a plant name already exists in the catalog (case-insensitive, ignoring extra spaces).
    */
-  checkDuplicateName(name: string, catalog: Plant[], excludePlantId?: string): Plant | undefined {
-    const normalized = normalizePlantName(name);
-    return catalog.find(
-      (p) => p.id !== excludePlantId && normalizePlantName(p.name) === normalized
-    );
+  checkDuplicateName(name: string, catalog: Plant[], excludePlantId?: string, botanicalName?: string): Plant | undefined {
+    const candidateKeys = getPlantDeduplicationKey({ name, botanicalName });
+    return catalog.find((p) => {
+      if (excludePlantId && p.id === excludePlantId) return false;
+      const existingKeys = getPlantDeduplicationKey(p);
+      if (candidateKeys.normalizedName && existingKeys.normalizedName === candidateKeys.normalizedName) {
+        return true;
+      }
+      if (candidateKeys.botanical && existingKeys.botanical && candidateKeys.botanical === existingKeys.botanical) {
+        return true;
+      }
+      if (candidateKeys.primaryName && existingKeys.primaryName && candidateKeys.primaryName === existingKeys.primaryName) {
+        return true;
+      }
+      return false;
+    });
   },
 
   /**

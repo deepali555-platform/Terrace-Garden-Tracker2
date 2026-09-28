@@ -46,6 +46,7 @@ export default function App() {
   const [isLoadingPlants, setIsLoadingPlants] = useState(true);
 
   const [plants, setPlants] = useState<Plant[]>([]);
+  const [totalCatalogCount, setTotalCatalogCount] = useState<number | null>(null);
   const [currentTab, setCurrentTab] = useState<'my-garden' | 'home' | 'reminders' | 'diagnosis' | 'fertilizer' | 'admin'>('home');
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
@@ -173,16 +174,18 @@ export default function App() {
       unsubscribeShared = firestoreStorageService.subscribeToSharedPlants((sharedPlants) => {
         if (isCancelled) return;
 
-        const sharedIds = new Set(sharedPlants.map((p) => p.id));
-        const filteredSeed = INITIAL_PLANTS.filter((sp) => !sharedIds.has(sp.id));
-        const allReferenceCatalog = [...filteredSeed, ...sharedPlants];
+        // Deduplicate the combined catalog (INITIAL_PLANTS + Firestore sharedPlants)
+        const uniqueReferenceCatalog = firestoreStorageService.deduplicatePlants([
+          ...INITIAL_PLANTS,
+          ...sharedPlants,
+        ]);
 
         // If guest, grab local storage overrides
         const localPlantsMap = !user
           ? new Map(storageService.getPlants().map((p) => [p.id, p]))
           : null;
 
-        const merged: Plant[] = allReferenceCatalog.map((basePlant) => {
+        const merged: Plant[] = uniqueReferenceCatalog.map((basePlant) => {
           const userState = userPlantStatesRef.current.get(basePlant.id);
           const verified = VERIFIED_PLANT_IMAGES[basePlant.id];
           const localOverride = localPlantsMap?.get(basePlant.id);
@@ -219,7 +222,14 @@ export default function App() {
         });
 
         setPlants(merged);
+        setTotalCatalogCount(uniqueReferenceCatalog.length);
         setIsLoadingPlants(false);
+
+        // Requirement 8: Add a brief console log of how many plants were loaded from the database and how many are displayed, so I can verify they match.
+        const myGardenCount = merged.filter((p) => Boolean(p.inMyGarden)).length;
+        console.log(
+          `[Terrace Garden Tracker] Database plants loaded: ${sharedPlants.length}, Displayed catalog count: ${uniqueReferenceCatalog.length}, My Garden count: ${myGardenCount}`
+        );
 
         // Update selectedPlantForDetail if currently open
         setSelectedPlantForDetail((currentSelected) => {
@@ -328,11 +338,19 @@ export default function App() {
           updatedAt: new Date().toISOString(),
         });
 
-        setPlants((prev) => [created, ...prev.filter((p) => p.id !== created.id)]);
+        setPlants((prev) => {
+          const updated = firestoreStorageService.deduplicatePlants([created, ...prev.filter((p) => p.id !== created.id)]);
+          setTotalCatalogCount(updated.length);
+          return updated;
+        });
         showToast(`Added ${created.name} to shared catalog and your garden!`);
       } else {
         const created = storageService.addPlant(savedPlant);
-        setPlants((prev) => [created, ...prev]);
+        setPlants((prev) => {
+          const updated = firestoreStorageService.deduplicatePlants([created, ...prev]);
+          setTotalCatalogCount(updated.length);
+          return updated;
+        });
         showToast(`Added ${created.name} to your garden!`);
       }
     }
@@ -341,7 +359,11 @@ export default function App() {
   // Delete plant handler
   const handleDeletePlant = async (id: string) => {
     const target = plants.find((p) => p.id === id);
-    setPlants((prev) => prev.filter((p) => p.id !== id));
+    setPlants((prev) => {
+      const remaining = prev.filter((p) => p.id !== id);
+      setTotalCatalogCount(remaining.length);
+      return remaining;
+    });
     if (selectedPlantForDetail?.id === id) {
       setSelectedPlantForDetail(null);
     }
@@ -764,7 +786,8 @@ export default function App() {
         }}
         overdueFertilizerCount={overdueFertilizerCount}
         gardenPlantCount={ownedPlants.length}
-        totalPlantCount={plants.length}
+        totalPlantCount={totalCatalogCount ?? undefined}
+        isLoadingPlants={isLoadingPlants}
         onResetDefaults={() => setShowResetConfirm(true)}
       />
 
@@ -816,7 +839,7 @@ export default function App() {
                     <span>My Active Terrace & Balcony</span>
                   </div>
                   <span className="text-[11px] sm:text-xs font-bold bg-emerald-800/90 text-emerald-200 px-2.5 py-0.5 rounded-full border border-emerald-500/40 shrink-0">
-                    {ownedPlants.length} {ownedPlants.length === 1 ? 'plant' : 'plants'}
+                    {ownedPlants.length} {ownedPlants.length === 1 ? 'plant in my garden' : 'plants in my garden'}
                   </span>
                 </div>
 
@@ -863,7 +886,7 @@ export default function App() {
                     className="min-h-[38px] sm:min-h-[42px] inline-flex items-center gap-1.5 px-3 py-1.5 sm:px-3.5 sm:py-2 bg-white/10 hover:bg-white/20 text-xs font-bold text-white rounded-xl shadow-xs transition-all border border-white/20 active:scale-95"
                   >
                     <BookOpen className="w-3.5 h-3.5 text-emerald-300 shrink-0" />
-                    <span>All Guide ({plants.length})</span>
+                    <span>All Guide ({isLoadingPlants || totalCatalogCount === null ? '...' : totalCatalogCount})</span>
                   </button>
                 </div>
               </div>
@@ -894,7 +917,7 @@ export default function App() {
                     Your garden list is currently empty
                   </h3>
                   <p className="text-xs text-stone-500 leading-relaxed">
-                    You haven&apos;t marked any plants as owned yet. All {plants.length} authentic Indian species remain fully browsable in the Reference Guide. Click &quot;Add to Garden&quot; on any plants you grow to track feeding and seasonal tasks!
+                    You haven&apos;t marked any plants as owned yet. All {isLoadingPlants || totalCatalogCount === null ? '...' : totalCatalogCount} authentic Indian species remain fully browsable in the Reference Guide. Click &quot;Add to Garden&quot; on any plants you grow to track feeding and seasonal tasks!
                   </p>
                 </div>
                 <div className="pt-2 flex items-center justify-center gap-3">
@@ -903,7 +926,7 @@ export default function App() {
                     className="min-h-[44px] inline-flex items-center gap-2 px-5 py-2.5 text-xs sm:text-sm font-bold text-white bg-emerald-700 hover:bg-emerald-800 rounded-2xl shadow-md transition-all active:scale-95"
                   >
                     <BookOpen className="w-4 h-4 text-emerald-200" />
-                    <span>Browse {plants.length} Reference Plants</span>
+                    <span>Browse {isLoadingPlants || totalCatalogCount === null ? '...' : totalCatalogCount} Reference Plants</span>
                   </button>
                 </div>
               </div>
@@ -1007,7 +1030,7 @@ export default function App() {
                 <div className="p-4 bg-emerald-50/70 border border-emerald-200/80 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
                   <div className="flex items-center gap-2 text-emerald-950 font-semibold">
                     <BookOpen className="w-4 h-4 text-emerald-700 shrink-0" />
-                    <span>Want to add more plants? All {plants.length} authentic Indian species are in the Reference Guide.</span>
+                    <span>Want to add more plants? All {isLoadingPlants || totalCatalogCount === null ? '...' : totalCatalogCount} authentic Indian species are in the Reference Guide.</span>
                   </div>
                   <button
                     onClick={() => setCurrentTab('home')}
@@ -1033,7 +1056,9 @@ export default function App() {
                     <span>Indian Balcony & Terrace Guide</span>
                   </div>
                   <span className="text-[11px] sm:text-xs font-bold bg-emerald-900/90 text-emerald-200 px-2.5 py-0.5 rounded-full border border-emerald-600/40 shrink-0">
-                    {plants.length} species
+                    {isLoadingPlants || totalCatalogCount === null
+                      ? 'Loading...'
+                      : `${totalCatalogCount} species`}
                   </span>
                 </div>
                 <h1 className="text-xl sm:text-3xl font-extrabold tracking-tight text-white drop-shadow-sm">
@@ -1043,27 +1068,30 @@ export default function App() {
                   Care instructions, sunlight needs, and Indian kitchen remedies. Tap &quot;+ Add to Garden&quot; to track feeding and seasonal alerts.
                 </p>
 
-                {/* Switcher & Action buttons */}
-                <div className="pt-1 flex flex-wrap items-center gap-1.5 sm:gap-2">
+                {/* Action buttons: Single horizontal row, never wrapping, equal width, min-h-[44px] */}
+                <div className="pt-2 flex flex-row items-center gap-1.5 sm:gap-2.5 w-full max-w-xl">
                   <button
+                    type="button"
                     onClick={() => handleSelectTab('my-garden')}
-                    className="min-h-[38px] sm:min-h-[42px] inline-flex items-center gap-1.5 px-3 py-1.5 sm:px-4 sm:py-2 bg-emerald-600 hover:bg-emerald-500 text-xs font-bold text-white rounded-xl shadow-xs transition-all active:scale-95"
+                    className="flex-1 min-w-0 min-h-[44px] px-1.5 sm:px-3.5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl shadow-xs transition-all active:scale-95 flex items-center justify-center gap-1 sm:gap-1.5 text-[12px] sm:text-[13px] font-bold whitespace-nowrap cursor-pointer"
                   >
                     <Sprout className="w-3.5 h-3.5 text-emerald-200 shrink-0" />
-                    <span>My Garden ({ownedPlants.length})</span>
+                    <span>My Garden</span>
                   </button>
                   <button
+                    type="button"
                     onClick={() => handleOpenScanModal()}
-                    className="min-h-[38px] sm:min-h-[42px] inline-flex items-center gap-1.5 px-3 py-1.5 sm:px-4 sm:py-2 bg-amber-400 hover:bg-amber-300 text-stone-950 text-xs font-bold rounded-xl shadow-xs transition-all active:scale-95"
+                    className="flex-1 min-w-0 min-h-[44px] px-1.5 sm:px-3.5 py-2 bg-amber-400 hover:bg-amber-300 text-stone-950 rounded-xl shadow-xs transition-all active:scale-95 flex items-center justify-center gap-1 sm:gap-1.5 text-[12px] sm:text-[13px] font-bold whitespace-nowrap cursor-pointer"
                   >
                     <Camera className="w-3.5 h-3.5 text-stone-900 shrink-0" />
                     <span>Scan Plant</span>
                   </button>
                   <button
+                    type="button"
                     onClick={handleOpenAddModal}
-                    className="min-h-[38px] sm:min-h-[42px] inline-flex items-center gap-1.5 px-3 py-1.5 sm:px-4 sm:py-2 bg-emerald-800 hover:bg-emerald-700 text-xs font-bold text-white rounded-xl shadow-xs transition-all ml-auto border border-emerald-600/50 active:scale-95"
+                    className="flex-1 min-w-0 min-h-[44px] px-1.5 sm:px-3.5 py-2 bg-emerald-800 hover:bg-emerald-700 text-white rounded-xl shadow-xs transition-all border border-emerald-600/50 flex items-center justify-center gap-1 sm:gap-1.5 text-[12px] sm:text-[13px] font-bold whitespace-nowrap cursor-pointer active:scale-95"
                   >
-                    <Plus className="w-3.5 h-3.5 stroke-[2.5]" />
+                    <Plus className="w-3.5 h-3.5 stroke-[2.5] shrink-0" />
                     <span>Add Plant</span>
                   </button>
                 </div>
@@ -1083,8 +1111,9 @@ export default function App() {
               onlyBloomingNow={onlyBloomingNow}
               onOnlyBloomingNowChange={setOnlyBloomingNow}
               currentMonthIndex={currentMonthIndex}
-              totalCount={plants.length}
+              totalCount={totalCatalogCount ?? plants.length}
               filteredCount={filteredReferencePlants.length}
+              isLoading={isLoadingPlants}
               onClearAll={handleClearAllFilters}
             />
 
@@ -1104,7 +1133,7 @@ export default function App() {
                     <p className="text-xs text-stone-500 leading-relaxed">
                       {searchQuery.trim()
                         ? 'Try searching by common English name (Tulsi, Rose, Jasmine, Money Plant), Hindi name (Gulab, Mogra, Genda), or category.'
-                        : `Try clearing filters to view all ${plants.length} authentic Indian terrace plants.`}
+                        : `Try clearing filters to view all ${isLoadingPlants || totalCatalogCount === null ? '...' : totalCatalogCount} authentic Indian terrace plants.`}
                     </p>
                   </div>
                   <div className="pt-1 flex flex-wrap items-center justify-center gap-2.5">
